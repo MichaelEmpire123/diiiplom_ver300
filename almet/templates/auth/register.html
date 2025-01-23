@@ -21,7 +21,7 @@
                 <input type="text" class="form-control" id="otchestvo" name="otchestvo">
             </div>
             <div class="mb-3">
-                <label for="email" class="form-label">Почта</label>
+                <label for="email" class="form-label">Email</label>
                 <input type="email" class="form-control" id="email" name="email" required>
             </div>
             <div class="mb-3">
@@ -36,8 +36,12 @@
                 <label for="password2" class="form-label">Повторите пароль</label>
                 <input type="password" class="form-control" id="password2" name="password2" required>
             </div>
-            {% if error %}
-                <div class="alert alert-danger">{{ error }}</div>
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             {% endif %}
             <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
         </form>

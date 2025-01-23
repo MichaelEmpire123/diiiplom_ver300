@@ -23,39 +23,53 @@ def login_view(request):
 def register_view(request):
     if request.method == 'POST':
         # Получаем данные из формы
-        email = request.POST['email']
-        password = request.POST['password']
-        password2 = request.POST['password2']
-        surname = request.POST['familia']
-        name = request.POST['name']
-        patronymic = request.POST['otchestvo']
-        tel = request.POST['tel']
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        password2 = request.POST.get('password2')
+        surname = request.POST.get('familia')
+        name = request.POST.get('name')
+        patronymic = request.POST.get('otchestvo')
+        tel = request.POST.get('tel')
 
         # Проверяем, совпадают ли пароли
         if password != password2:
-            return render(request, 'auth/register.html', {'error': 'Пароли не совпадают'})
+            messages.error(request, 'Пароли не совпадают.')
+            return render(request, 'auth/register.html')
 
-        # Создаем пользователя
+        # Проверяем, что все обязательные поля заполнены
+        if not email or not password or not surname or not name or not tel:
+            messages.error(request, 'Пожалуйста, заполните все обязательные поля.')
+            return render(request, 'auth/register.html')
+
+        # Создаем пользователя и запись в таблице Citizen
         try:
+            # Создаем пользователя
             user = User.objects.create_user(email=email, password=password)
-            # Создаем запись в таблице Citizen без города и улицы
+
+            # Создаем запись в таблице Citizen
             citizen = Citizen.objects.create(
                 surname=surname,
                 name=name,
                 patronymic=patronymic,
                 tel=tel,
                 email=email,
-                house="",  # Пустое значение
-                flat=None  # Пустое значение
+                id_city=None,  # Город можно указать позже
+                id_street=None,  # Улицу можно указать позже
+                house=None,  # Дом можно указать позже
+                flat=None  # Квартиру можно указать позже
             )
+
+            # Связываем пользователя с записью в таблице Citizen
             user.id_citizen = citizen
             user.save()
 
             # Авторизуем пользователя
             login(request, user)
+            messages.success(request, 'Регистрация прошла успешно!')
             return redirect('profile')
         except Exception as e:
-            return render(request, 'auth/register.html', {'error': str(e)})
+            messages.error(request, f'Ошибка при регистрации: {str(e)}')
+            return render(request, 'auth/register.html')
 
     return render(request, 'auth/register.html')
 
