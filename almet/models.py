@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.utils import timezone
+import os
 
 class City(models.Model):
     name_city = models.CharField(max_length=100)
@@ -60,12 +62,18 @@ class Status(models.Model):
     def __str__(self):
         return self.name_status
 
+
+def get_upload_path(instance, filename):
+    # Генерация пути: appeals/{id}_{фамилия}_{дата}/{filename}
+    date = timezone.now().strftime("%Y-%m-%d")
+    return os.path.join('appeals', f'{instance.id}_{instance.id_sitizen.surname}_{date}', filename)
+
 class Appeals(models.Model):
     id_sitizen = models.ForeignKey(Citizen, on_delete=models.CASCADE)
     date_time = models.DateTimeField()
     id_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     description_problem = models.TextField()
-    photo = models.ImageField(upload_to='appeals/', blank=True, null=True)
+    photo = models.ImageField(upload_to=get_upload_path, blank=True, null=True)
     id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):

@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 
 from .forms import AppealForm, MessageForm
-from .models import User, Citizen, Street, City, Status, Appeals, Message
-
+from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals
+from django.db.models import OuterRef, Subquery
 
 def index(request):
     return render(request, 'almet/index.html')
@@ -159,11 +159,23 @@ def create_appeal(request):
     if request.method == 'POST':
         form = AppealForm(request.POST, request.FILES)
         if form.is_valid():
+            # Создаем обращение
             appeal = form.save(commit=False)
             appeal.id_sitizen = request.user.id_citizen
-            appeal.status = Status.objects.get(name_status='Принято')
-            appeal.date_time = timezone.now()  # Устанавливаем текущее время
-            appeal.save()
+            appeal.date_time = timezone.now()
+            appeal.save()  # Сохраняем обращение, чтобы получить id
+
+            # Получаем статус "Принято" (ID = 1)
+            status = Status.objects.get(id=1)  # Или name_status='Принято'
+
+            # Создаем запись в Processing_appeals
+            Processing_appeals.objects.create(
+                id_appeal=appeal,
+                id_status=status,
+                date_time_setting_status=timezone.now(),
+                # Фото отчета пока не привязываем
+            )
+
             return redirect('profile')
     else:
         form = AppealForm()
@@ -172,7 +184,16 @@ def create_appeal(request):
 
 @login_required
 def view_appeals(request):
-    appeals = Appeals.objects.filter(id_sitizen=request.user.id_citizen)
+    # Получаем последний статус для каждого обращения
+    latest_status_subquery = Processing_appeals.objects.filter(
+        id_appeal=OuterRef('id')
+    ).order_by('-date_time_setting_status').values('id_status__name_status')[:1]
+
+    # Аннотируем обращения последним статусом
+    appeals = Appeals.objects.filter(id_sitizen=request.user.id_citizen).annotate(
+        latest_status=Subquery(latest_status_subquery)
+    )
+
     return render(request, 'appeals/view_appeals.html', {'appeals': appeals})
 
 

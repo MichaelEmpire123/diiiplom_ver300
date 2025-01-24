@@ -19,13 +19,6 @@
                     <button type="button" class="btn btn-outline-secondary" id="togglePassword" onclick="togglePasswordVisibility('password', 'togglePassword')">👁️‍🗨️</button>
                 </div>
             </div>
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
             <button type="submit" class="btn btn-primary">Войти</button>
         </form>
     </div>
