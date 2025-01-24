@@ -10,15 +10,38 @@ def index(request):
 
 def login_view(request):
     if request.method == 'POST':
-        email = request.POST['email']
-        password = request.POST['password']
-        user = authenticate(request, email=email, password=password)
+        # Получаем данные из формы
+        login_input = request.POST.get('login_input')  # Поле для email или телефона
+        password = request.POST.get('password')
+
+        # Проверяем, что все поля заполнены
+        if not login_input or not password:
+            messages.error(request, 'Пожалуйста, заполните все поля.')
+            return render(request, 'auth/login.html')
+
+        # Проверяем, является ли введённое значение email или телефоном
+        if '@' in login_input:
+            # Если введён email
+            user = authenticate(request, email=login_input, password=password)
+        else:
+            # Если введён телефон
+            try:
+                citizen = Citizen.objects.get(tel=login_input)
+                user = authenticate(request, email=citizen.email, password=password)
+            except Citizen.DoesNotExist:
+                user = None
+
+        # Проверяем, успешна ли аутентификация
         if user is not None:
             login(request, user)
             return redirect('profile')
         else:
-            return render(request, 'auth/login.html', {'error': 'Invalid credentials'})
+            messages.error(request, 'Неверный email/телефон или пароль.')
+            return render(request, 'auth/login.html')
+
     return render(request, 'auth/login.html')
+
+
 
 def register_view(request):
     if request.method == 'POST':
@@ -55,8 +78,8 @@ def register_view(request):
                 email=email,
                 id_city=None,  # Город можно указать позже
                 id_street=None,  # Улицу можно указать позже
-                house=None,  # Дом можно указать позже
-                flat=None  # Квартиру можно указать позже
+                house="",  # Указываем пустую строку вместо NULL
+                flat=0  # Указываем значение по умолчанию
             )
 
             # Связываем пользователя с записью в таблице Citizen
@@ -85,26 +108,44 @@ def logout_view(request):
 
 @login_required
 def update_profile(request):
+    # Получаем текущего пользователя и связанного с ним жителя
+    user = request.user
+    citizen = user.id_citizen
+
     if request.method == 'POST':
         # Получаем данные из формы
+        surname = request.POST.get('surname')
+        name = request.POST.get('name')
+        patronymic = request.POST.get('patronymic')
+        tel = request.POST.get('tel')
+        email = request.POST.get('email')
         city_name = request.POST.get('city')
         street_name = request.POST.get('street')
         house = request.POST.get('house')
         flat = request.POST.get('flat')
 
-        # Получаем или создаем город и улицу
-        city, _ = City.objects.get_or_create(name_city=city_name)
-        street, _ = Street.objects.get_or_create(name_street=street_name)
-
-        # Обновляем данные пользователя
-        citizen = request.user.id_citizen
-        citizen.id_city = city
-        citizen.id_street = street
+        # Обновляем данные жителя
+        citizen.surname = surname
+        citizen.name = name
+        citizen.patronymic = patronymic
+        citizen.tel = tel
+        citizen.email = email
         citizen.house = house
         citizen.flat = flat
-        citizen.save()
 
+        # Получаем или создаем город и улицу
+        if city_name:
+            city, _ = City.objects.get_or_create(name_city=city_name)
+            citizen.id_city = city
+        if street_name:
+            street, _ = Street.objects.get_or_create(name_street=street_name)
+            citizen.id_street = street
+
+        # Сохраняем изменения
+        citizen.save()
+        messages.success(request, 'Профиль успешно обновлён.')
         return redirect('profile')
 
+    # Отображаем форму с текущими данными
     return render(request, 'auth/update_profile.html')
 

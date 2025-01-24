@@ -9,13 +9,20 @@
         <form method="post" class="mt-4">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="login" class="form-label">Логин (телефон или почта)</label>
-                <input type="text" class="form-control" id="login" name="login" required>
+                <label for="login_input" class="form-label">Email или телефон</label>
+                <input type="text" class="form-control" id="login_input" name="login_input" required>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Пароль</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
             <button type="submit" class="btn btn-primary">Войти</button>
         </form>
     </div>

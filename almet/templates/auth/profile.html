@@ -14,8 +14,11 @@
                 <p>Имя: {{ user.id_citizen.name }}</p>
                 <p>Отчество: {{ user.id_citizen.patronymic }}</p>
                 <p>Телефон: {{ user.id_citizen.tel }}</p>
+                <p>Email: {{ user.id_citizen.email }}</p>
                 <p>Город: {{ user.id_citizen.id_city.name_city|default:"Не указан" }}</p>
                 <p>Улица: {{ user.id_citizen.id_street.name_street|default:"Не указана" }}</p>
+                <p>Дом: {{ user.id_citizen.house|default:"Не указан" }}</p>
+                <p>Квартира: {{ user.id_citizen.flat|default:"Не указана" }}</p>
                 <a href="{% url 'update_profile' %}" class="btn btn-primary">Обновить профиль</a>
                 <a href="{% url 'logout' %}" class="btn btn-danger">Выйти</a>
             </div>

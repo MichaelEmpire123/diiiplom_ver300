@@ -19,10 +19,10 @@ class Citizen(models.Model):
     patronymic = models.CharField(max_length=255, blank=True, null=True)
     tel = models.CharField(max_length=255)
     email = models.CharField(max_length=255)
-    id_city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, blank=True)  # Необязательное поле
-    id_street = models.ForeignKey(Street, on_delete=models.SET_NULL, null=True, blank=True)  # Необязательное поле
-    house = models.CharField(max_length=50, blank=True, null=True)  # Необязательное поле
-    flat = models.IntegerField(blank=True, null=True)  # Необязательное поле
+    id_city = models.ForeignKey('City', on_delete=models.SET_NULL, null=True, blank=True)
+    id_street = models.ForeignKey('Street', on_delete=models.SET_NULL, null=True, blank=True)
+    house = models.CharField(max_length=50, blank=True, null=True)  # Делаем поле необязательным
+    flat = models.IntegerField(blank=True, null=True)  # Делаем поле необязательным
 
     def __str__(self):
         return f"{self.surname} {self.name}"
