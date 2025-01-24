@@ -1,8 +1,11 @@
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import User, Citizen, Street, City
+from django.utils import timezone
+
+from .forms import AppealForm, MessageForm
+from .models import User, Citizen, Street, City, Status, Appeals, Message
 
 
 def index(request):
@@ -149,3 +152,42 @@ def update_profile(request):
     # Отображаем форму с текущими данными
     return render(request, 'auth/update_profile.html')
 
+
+# ОБращения
+@login_required
+def create_appeal(request):
+    if request.method == 'POST':
+        form = AppealForm(request.POST, request.FILES)
+        if form.is_valid():
+            appeal = form.save(commit=False)
+            appeal.id_sitizen = request.user.id_citizen
+            appeal.status = Status.objects.get(name_status='Принято')
+            appeal.date_time = timezone.now()  # Устанавливаем текущее время
+            appeal.save()
+            return redirect('profile')
+    else:
+        form = AppealForm()
+    return render(request, 'appeals/create_appeal.html', {'form': form})
+
+
+@login_required
+def view_appeals(request):
+    appeals = Appeals.objects.filter(id_sitizen=request.user.id_citizen)
+    return render(request, 'appeals/view_appeals.html', {'appeals': appeals})
+
+
+@login_required
+def chat(request, appeal_id):
+    appeal = get_object_or_404(Appeals, id=appeal_id)
+    if request.method == 'POST':
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.id_appeals = appeal
+            message.id_sitizen = request.user.id_citizen
+            message.save()
+            return redirect('chat', appeal_id=appeal_id)
+    else:
+        form = MessageForm()
+    messages = Message.objects.filter(id_appeals=appeal)
+    return render(request, 'chat.html', {'appeal': appeal, 'messages': messages, 'form': form})

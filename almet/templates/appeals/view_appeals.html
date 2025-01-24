@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои обращения{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="text-center">Мои обращения</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Описание</th>
+                    <th>Статус</th>
+                    <th>Дата создания</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appeal in appeals %}
+                <tr>
+                    <td>{{ appeal.id }}</td>
+                    <td>{{ appeal.description_problem }}</td>
+                    <td>{{ appeal.id_status.name_status }}</td>
+                    <td>{{ appeal.date_time }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

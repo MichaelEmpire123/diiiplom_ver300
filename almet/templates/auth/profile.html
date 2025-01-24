@@ -23,6 +23,14 @@
                 <a href="{% url 'logout' %}" class="btn btn-danger">Выйти</a>
             </div>
         </div>
+        <!-- Ссылки для Жителя -->
+                {% if not user.id_sotrudnik %}
+                    <h5>Действия:</h5>
+                    <ul>
+                        <li><a href="{% url 'create_appeal' %}">Подать обращение</a></li>
+                        <li><a href="{% url 'view_appeals' %}">Мои обращения</a></li>
+                    </ul>
+                {% endif %}
     </div>
 </div>
 {% endblock %}

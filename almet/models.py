@@ -65,11 +65,11 @@ class Appeals(models.Model):
     date_time = models.DateTimeField()
     id_category = models.ForeignKey(Category, on_delete=models.CASCADE)
     description_problem = models.TextField()
-    photo = models.TextField(blank=True, null=True)
+    photo = models.ImageField(upload_to='appeals/', blank=True, null=True)
     id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):
-        return f"Appeal {self.id} by {self.id_sitizen}"
+        return f"Обращение {self.id} by {self.id_sitizen}"
 
 class Processing_appeals(models.Model):
     id_appeal = models.ForeignKey(Appeals, on_delete=models.CASCADE)
@@ -78,7 +78,7 @@ class Processing_appeals(models.Model):
     photo = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"Processing {self.id} for Appeal {self.id_appeal}"
+        return f"Обработка {self.id} для обращения {self.id_appeal}"
 
 class Message(models.Model):
     id_appeals = models.ForeignKey(Appeals, on_delete=models.CASCADE)
@@ -88,7 +88,7 @@ class Message(models.Model):
     created_at = models.DateTimeField()
 
     def __str__(self):
-        return f"Message {self.id} by {self.id_sotrudnik or self.id_sitizen}"
+        return f"Сообщение {self.id} by {self.id_sotrudnik or self.id_sitizen}"
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -126,4 +126,3 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
-    # у
