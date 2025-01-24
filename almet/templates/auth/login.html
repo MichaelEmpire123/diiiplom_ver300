@@ -14,7 +14,10 @@
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Пароль</label>
-                <input type="password" class="form-control" id="password" name="password" required>
+                <div class="input-group">
+                    <input type="password" class="form-control" id="password" name="password" required>
+                    <button type="button" class="btn btn-outline-secondary" id="togglePassword" onclick="togglePasswordVisibility('password', 'togglePassword')">👁️‍🗨️</button>
+                </div>
             </div>
             {% if messages %}
                 {% for message in messages %}
@@ -27,5 +30,18 @@
         </form>
     </div>
 </div>
+
+<script>
+    function togglePasswordVisibility(inputId, buttonId) {
+        const input = document.getElementById(inputId);
+        const button = document.getElementById(buttonId);
+        if (input.type === "password") {
+            input.type = "text";
+            button.innerHTML = "👁️";
+        } else {
+            input.type = "password";
+            button.innerHTML = "👁️‍🗨️";
+        }
+    }
+</script>
 {% endblock %}
-<!--р-->

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Обновление профиля{% endblock %}
+{% block title %}Обнoвление профиля{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -44,7 +44,7 @@
                 <label for="flat" class="form-label">Квартира</label>
                 <input type="text" class="form-control" id="flat" name="flat" value="{{ user.id_citizen.flat|default:'' }}">
             </div>
-            <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
             <a href="{% url 'profile' %}" class="btn btn-secondary">Отмена</a>
         </form>
     </div>
