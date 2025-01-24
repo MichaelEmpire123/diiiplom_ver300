@@ -8,7 +8,7 @@ from .models import (
 @admin.register(City)
 class CityAdmin(admin.ModelAdmin):
     list_display = ('id', 'name_city')  # Поля, которые будут отображаться в списке
-    search_fields = ('name_city',)  # Поля, по которым можно искать
+    search_fields = ('name_city',)  # Поля, по которым можно искать3
 
 @admin.register(Street)
 class StreetAdmin(admin.ModelAdmin):

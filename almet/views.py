@@ -133,7 +133,7 @@ def update_profile(request):
         citizen.house = house
         citizen.flat = flat
 
-        # Получаем или создаем город и улицу
+        # Получаем или создаем город и улицуу
         if city_name:
             city, _ = City.objects.get_or_create(name_city=city_name)
             citizen.id_city = city
