@@ -10,33 +10,48 @@
             <div class="card-body">
                 <p class="card-text">Добро пожаловать, {{ user.email }}!</p>
                 <h5>Ваши данные:</h5>
-                <p>Фамилия: {{ user.id_citizen.surname }}</p>
-                <p>Имя: {{ user.id_citizen.name }}</p>
-                <p>Отчество: {{ user.id_citizen.patronymic }}</p>
-                <p>Телефон: {{ user.id_citizen.tel }}</p>
-                <p>Email: {{ user.id_citizen.email }}</p>
-                <p>Город: {{ user.id_citizen.id_city.name_city|default:"Не указан" }}</p>
-                <p>Улица: {{ user.id_citizen.id_street.name_street|default:"Не указана" }}</p>
-                <p>Дом: {{ user.id_citizen.house|default:"Не указан" }}</p>
-                <p>Квартира: {{ user.id_citizen.flat|default:"Не указана" }}</p>
+
+                <!-- Данные для жителя -->
+                {% if user.id_citizen %}
+                    <p>Фамилия: {{ user.id_citizen.surname }}</p>
+                    <p>Имя: {{ user.id_citizen.name }}</p>
+                    <p>Отчество: {{ user.id_citizen.patronymic }}</p>
+                    <p>Телефон: {{ user.id_citizen.tel }}</p>
+                    <p>Email: {{ user.id_citizen.email }}</p>
+                    <p>Город: {{ user.id_citizen.id_city.name_city|default:"Не указан" }}</p>
+                    <p>Улица: {{ user.id_citizen.id_street.name_street|default:"Не указана" }}</p>
+                    <p>Дом: {{ user.id_citizen.house|default:"Не указан" }}</p>
+                    <p>Квартира: {{ user.id_citizen.flat|default:"Не указана" }}</p>
+                {% endif %}
+
+                <!-- Данные для сотрудника -->
+                {% if user.id_sotrudnik %}
+                    <p>Фамилия: {{ user.id_sotrudnik.surname }}</p>
+                    <p>Имя: {{ user.id_sotrudnik.name }}</p>
+                    <p>Отчество: {{ user.id_sotrudnik.patronymic }}</p>
+                    <p>Служба: {{ user.id_sotrudnik.id_service.name_service }}</p>
+                {% endif %}
+
                 <a href="{% url 'update_profile' %}" class="btn btn-primary">Обновить профиль</a>
                 <a href="{% url 'logout' %}" class="btn btn-danger">Выйти</a>
             </div>
         </div>
 
+        <!-- Действия для администратора -->
         {% if user.is_staff or user.is_superuser %}
         <h5>Администратор действия:</h5>
         <ul>
             <li><a href="/admin">Админка Django</a></li>
             <li><a href="{% url 'admin_categories' %}">Категории обращений</a></li>
             <li><a href="{% url 'admin_users' %}">Все пользователи</a></li>
+            <li><a href="{% url 'admin_create_service' %}">Создать городскую службу</a></li>
             <li><a href="{% url 'admin_create_employee' %}">Создать сотрудника городской службы</a></li>
             <li><a href="{% url 'admin_all_appeals' %}">Все обращения</a></li>
         </ul>
         {% endif %}
 
-        <!-- Ссылки для Жителя -->
-        {% if not user.id_sotrudnik %}
+        <!-- Действия для жителя -->
+        {% if user.id_citizen %}
             <h5>Жители действия:</h5>
             <ul>
                 <li><a href="{% url 'create_appeal' %}">Подать обращение</a></li>
@@ -44,16 +59,14 @@
             </ul>
         {% endif %}
 
-
-        <!-- Ссылки для Городской службы -->
+        <!-- Действия для сотрудника -->
         {% if user.id_sotrudnik %}
             <h5>Действия:</h5>
             <ul>
-                <li><a href="{% url 'view_service_appeals' %}">Обращения к службе</a></li>
-                <li><a href="{% url 'create_report' %}">Создать отчет</a></li>
+                <li><a href="#">Обращения к службе</a></li>
+                <li><a href="#">Создать отчет</a></li>
             </ul>
         {% endif %}
     </div>
 </div>
 {% endblock %}
-<!--р-->

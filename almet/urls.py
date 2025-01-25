@@ -22,6 +22,7 @@ urlpatterns = [
     path('administrator/categories/edit/<int:category_id>/', views.edit_category, name='edit_category'),
     path('administrator/categories/delete/<int:category_id>/', views.delete_category, name='delete_category'),
     path('administrator/users/', views.admin_users, name='admin_users'),
+    path('administrator/create_service/', views.admin_create_service, name='admin_create_service'),  # Новый маршрут
     path('administrator/create_employee/', views.admin_create_employee, name='admin_create_employee'),
     path('administrator/all_appeals/', views.admin_all_appeals, name='admin_all_appeals'),
 ]

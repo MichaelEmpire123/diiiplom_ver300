@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Создание городской службы{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-center mb-4">Создание городской службы</h2>
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.name.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.id_city.id_for_label }}" class="form-label">{{ form.id_city.label }}</label>
+            {{ form.id_city }}
+            {% if form.id_city.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.id_city.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.id_street.id_for_label }}" class="form-label">{{ form.id_street.label }}</label>
+            {{ form.id_street }}
+            {% if form.id_street.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.id_street.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.house.id_for_label }}" class="form-label">{{ form.house.label }}</label>
+            {{ form.house }}
+            {% if form.house.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.house.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.flat.id_for_label }}" class="form-label">{{ form.flat.label }}</label>
+            {{ form.flat }}
+            {% if form.flat.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.flat.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.tel.id_for_label }}" class="form-label">{{ form.tel.label }}</label>
+            {{ form.tel }}
+            {% if form.tel.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.tel.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">Создать</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

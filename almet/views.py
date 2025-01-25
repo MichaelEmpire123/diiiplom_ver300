@@ -1,15 +1,21 @@
+import secrets
+import string
+
 from django.contrib import messages
+from django.contrib.auth.hashers import make_password
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
-from .forms import AppealForm, MessageForm
-from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category
+from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm
+from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki
 from django.db.models import OuterRef, Subquery
 import xml.etree.ElementTree as ET
 
 def index(request):
     return render(request, 'almet/index.html')
+
 
 def login_view(request):
     if request.method == 'POST':
@@ -22,25 +28,46 @@ def login_view(request):
             messages.error(request, 'Пожалуйста, заполните все поля.')
             return render(request, 'auth/login.html')
 
-        # Проверяем, является ли введённое значение email или телефоном
+        user = None
+
+        # Проверяем, является ли введённое значение email
         if '@' in login_input:
-            # Если введён email
-            user = authenticate(request, email=login_input, password=password)
+            # Если введён email, проверяем как жителя, так и сотрудника
+            print(f"Пытаемся аутентифицировать пользователя с email: {login_input}")
+            try:
+                # Ищем пользователя по email
+                user = User.objects.get(email=login_input)
+                print(f"Найден пользователь: {user}")
+
+                # Проверяем пароль вручную
+                if user.check_password(password):
+                    print("Пароль верный. Аутентификация успешна.")
+                    login(request, user)
+                    return redirect('profile')
+                else:
+                    print("Неверный пароль.")
+                    messages.error(request, 'Неверный email/телефон или пароль.')
+            except User.DoesNotExist:
+                print("Пользователь с таким email не найден.")
+                messages.error(request, 'Неверный email/телефон или пароль.')
         else:
-            # Если введён телефон
+            # Если введён телефон, проверяем только жителя
             try:
                 citizen = Citizen.objects.get(tel=login_input)
+                print(f"Найден житель с телефоном: {login_input}")
                 user = authenticate(request, email=citizen.email, password=password)
-            except Citizen.DoesNotExist:
-                user = None
+                print(f"Результат аутентификации: {user}")
 
-        # Проверяем, успешна ли аутентификация
-        if user is not None:
-            login(request, user)
-            return redirect('profile')
-        else:
-            messages.error(request, 'Неверный email/телефон или пароль.')
-            return render(request, 'auth/login.html')
+                if user is not None:
+                    login(request, user)
+                    return redirect('profile')
+                else:
+                    messages.error(request, 'Неверный email/телефон или пароль.')
+            except Citizen.DoesNotExist:
+                # Если телефон не найден, сообщаем об ошибке
+                messages.error(request, 'Неверный email/телефон или пароль.')
+
+        return render(request, 'auth/login.html')
 
     return render(request, 'auth/login.html')
 
@@ -325,14 +352,73 @@ def admin_users(request):
     users = User.objects.all()
     return render(request, 'admin/users.html', {'users': users})
 
+
+
+# Страница создания городской службы на сайте
+@login_required
+@user_passes_test(is_admin)
+def admin_create_service(request):
+    if request.method == 'POST':
+        form = ServiceForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Городская служба успешно создана.')
+            return redirect('admin_create_service')
+    else:
+        form = ServiceForm()
+
+    return render(request, 'admin/create_service.html', {'form': form})
+
+
 # Страница создания сотрудника городской службы
 @login_required
 @user_passes_test(is_admin)
 def admin_create_employee(request):
     if request.method == 'POST':
-        # Логика создания сотрудника
-        pass
-    return render(request, 'admin/create_employee.html')
+        form = EmployeeRegistrationForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            surname = form.cleaned_data['surname']
+            name = form.cleaned_data['name']
+            patronymic = form.cleaned_data['patronymic']
+            service = form.cleaned_data['service']
+
+            # Генерируем случайный пароль
+            alphabet = string.ascii_letters + string.digits
+            password = ''.join(secrets.choice(alphabet) for i in range(12))  # Пароль из 12 символов
+
+
+            # Создаем пользователя и запись в таблице Sotrudniki
+            try:
+                # Создаем пользователя
+                user = User.objects.create_user(email=email, password=password)  # Передаем password, а не hashed_password
+
+                # Создаем запись в таблице Sotrudniki
+                employee = Sotrudniki.objects.create(
+                    surname=surname,
+                    name=name,
+                    patronymic=patronymic,
+                    id_service=service
+                )
+
+                # Связываем пользователя с записью в таблице Sotrudniki
+                user.id_sotrudnik = employee
+                user.save()
+
+                # Создаем текстовый файл с паролем
+                file_content = f"Email: {email}\nФамилия: {surname}\nИмя: {name}\nПароль: {password}"
+                response = HttpResponse(file_content, content_type='text/plain')
+                response['Content-Disposition'] = f'attachment; filename="employee_{employee.id}_password.txt"'
+
+                # Авторизуем пользователя
+                messages.success(request, 'Регистрация сотрудника прошла успешно! Пароль скачан.')
+                return response
+            except Exception as e:
+                messages.error(request, f'Ошибка при регистрации: {str(e)}')
+                return render(request, 'auth/register_employee.html', {'form': form})
+    else:
+        form = EmployeeRegistrationForm()
+    return render(request, 'admin/create_employee.html', {'form': form})
 
 # Страница просмотра всех обращений
 @login_required

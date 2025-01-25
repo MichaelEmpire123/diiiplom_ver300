@@ -1,27 +1,72 @@
 {% extends 'base.html' %}
 
-{% block title %}Создание сотрудника{% endblock %}
+{% block title %}Регистрация сотрудника{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Создание сотрудника городской службы</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="surname">Фамилия:</label>
-            <input type="text" name="surname" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label for="name">Имя:</label>
-            <input type="text" name="name" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label for="service">Служба:</label>
-            <select name="service" class="form-control" required>
-                <!-- Опции для выбора службы -->
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Создать</button>
-    </form>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2 class="text-center">Регистрация сотрудника</h2>
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.email.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.surname.id_for_label }}" class="form-label">{{ form.surname.label }}</label>
+                {{ form.surname }}
+                {% if form.surname.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.surname.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.name.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.patronymic.id_for_label }}" class="form-label">{{ form.patronymic.label }}</label>
+                {{ form.patronymic }}
+                {% if form.patronymic.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.patronymic.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.service.id_for_label }}" class="form-label">{{ form.service.label }}</label>
+                {{ form.service }}
+                {% if form.service.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.service.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">Зарегистрироваться</button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
