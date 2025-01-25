@@ -23,14 +23,36 @@
                 <a href="{% url 'logout' %}" class="btn btn-danger">Выйти</a>
             </div>
         </div>
+
+        {% if user.is_staff or user.is_superuser %}
+        <h5>Администратор действия:</h5>
+        <ul>
+            <li><a href="/admin">Админка Django</a></li>
+            <li><a href="{% url 'admin_categories' %}">Категории обращений</a></li>
+            <li><a href="{% url 'admin_users' %}">Все пользователи</a></li>
+            <li><a href="{% url 'admin_create_employee' %}">Создать сотрудника городской службы</a></li>
+            <li><a href="{% url 'admin_all_appeals' %}">Все обращения</a></li>
+        </ul>
+        {% endif %}
+
         <!-- Ссылки для Жителя -->
-                {% if not user.id_sotrudnik %}
-                    <h5>Действия:</h5>
-                    <ul>
-                        <li><a href="{% url 'create_appeal' %}">Подать обращение</a></li>
-                        <li><a href="{% url 'view_appeals' %}">Мои обращения</a></li>
-                    </ul>
-                {% endif %}
+        {% if not user.id_sotrudnik %}
+            <h5>Жители действия:</h5>
+            <ul>
+                <li><a href="{% url 'create_appeal' %}">Подать обращение</a></li>
+                <li><a href="{% url 'view_appeals' %}">Мои обращения</a></li>
+            </ul>
+        {% endif %}
+
+
+        <!-- Ссылки для Городской службы -->
+        {% if user.id_sotrudnik %}
+            <h5>Действия:</h5>
+            <ul>
+                <li><a href="{% url 'view_service_appeals' %}">Обращения к службе</a></li>
+                <li><a href="{% url 'create_report' %}">Создать отчет</a></li>
+            </ul>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -12,6 +12,7 @@ def validate_image_format(file):
     if file.size > max_size:
         raise ValidationError('Размер файла не должен превышать 5 МБ.')
 
+
 class AppealForm(forms.ModelForm):
     class Meta:
         model = Appeals
@@ -19,11 +20,18 @@ class AppealForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Переопределяем labels на русский язык
+        self.fields['id_category'].label = 'Категория'
+        self.fields['description_problem'].label = 'Описание проблемы'
+        self.fields['photo'].label = 'Фото проблемы'
+
+        # Добавляем валидатор для фото
         self.fields['photo'].validators.append(validate_image_format)
-class AppealForm(forms.ModelForm):
-    class Meta:
-        model = Appeals
-        fields = ['id_category', 'description_problem', 'photo']
+
+
+
+
 
 class MessageForm(forms.ModelForm):
     class Meta:

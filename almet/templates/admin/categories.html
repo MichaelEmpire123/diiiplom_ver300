@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Управление категориями{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Управление категориями</h2>
+
+    <!-- Форма для массового удаления -->
+    <form method="post" action="{% url 'admin_categories' %}" id="mass-delete-form">
+        {% csrf_token %}
+        <button type="submit" name="mass_delete" class="btn btn-danger mb-3">Удалить выбранные</button>
+
+        <!-- Таблица категорий -->
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Выбрать</th>
+                    <th>ID</th>
+                    <th>Официальное название</th>
+                    <th>Краткое название</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="selected_categories" value="{{ category.id }}">
+                    </td>
+                    <td>{{ category.id }}</td>
+                    <td>{{ category.name_official }}</td>
+                    <td>{{ category.name_short }}</td>
+                    <td>
+                        <!-- Кнопка "Изменить" -->
+                        <a href="{% url 'edit_category' category.id %}" class="btn btn-sm btn-warning">Изменить</a>
+                        <!-- Кнопка "Удалить" -->
+                        <form method="post" action="{% url 'delete_category' category.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены?')">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+
+    <!-- Форма для добавления категории -->
+    <div class="mb-4">
+        <h4>Добавить категорию</h4>
+        <form method="post" action="{% url 'admin_categories' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name_official">Официальное название:</label>
+                <input type="text" name="name_official" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="name_short">Краткое название:</label>
+                <input type="text" name="name_short" class="form-control">
+            </div>
+            <button type="submit" name="add_category" class="btn btn-primary">Добавить</button>
+        </form>
+    </div>
+
+    <!-- Форма для загрузки XML -->
+    <div class="mb-4">
+        <h4>Загрузить категории из XML</h4>
+        <form method="post" action="{% url 'admin_categories' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="xml_file">XML-файл:</label>
+                <input type="file" name="xml_file" class="form-control-file" accept=".xml" required>
+            </div>
+            <button type="submit" name="upload_xml" class="btn btn-primary">Загрузить</button>
+        </form>
+    </div>
+</div>
+
+<!-- Скрипт для подтверждения массового удаления -->
+<script>
+    document.getElementById('mass-delete-form').addEventListener('submit', function(event) {
+        const selected = document.querySelectorAll('input[name="selected_categories"]:checked');
+        if (selected.length === 0) {
+            alert('Выберите хотя бы одну категорию для удаления.');
+            event.preventDefault();
+        } else if (!confirm('Вы уверены, что хотите удалить выбранные категории?')) {
+            event.preventDefault();
+        }
+    });
+</script>
+{% endblock %}

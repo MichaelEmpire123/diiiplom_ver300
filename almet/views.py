@@ -1,12 +1,12 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
-
 from .forms import AppealForm, MessageForm
-from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals
+from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category
 from django.db.models import OuterRef, Subquery
+import xml.etree.ElementTree as ET
 
 def index(request):
     return render(request, 'almet/index.html')
@@ -109,6 +109,7 @@ def logout_view(request):
     return redirect('index')
 
 
+# Житель
 @login_required
 def update_profile(request):
     # Получаем текущего пользователя и связанного с ним жителя
@@ -212,3 +213,130 @@ def chat(request, appeal_id):
         form = MessageForm()
     messages = Message.objects.filter(id_appeals=appeal)
     return render(request, 'chat.html', {'appeal': appeal, 'messages': messages, 'form': form})
+
+
+# Администратор
+# Проверка, является ли пользователь администратором
+def is_admin(user):
+    return user.is_staff or user.is_superuser
+
+# Страница управления категориями
+@login_required
+@user_passes_test(is_admin)
+def admin_categories(request):
+    if request.method == 'POST':
+        # Добавление категории
+        if 'add_category' in request.POST:
+            name_official = request.POST.get('name_official')
+            name_short = request.POST.get('name_short')
+            if name_official:
+                Category.objects.create(name_official=name_official, name_short=name_short)
+                messages.success(request, 'Категория успешно добавлена.')
+            else:
+                messages.error(request, 'Официальное название обязательно.')
+
+        # Загрузка XML
+        elif 'upload_xml' in request.POST:
+            xml_file = request.FILES.get('xml_file')
+            if xml_file:
+                try:
+                    tree = ET.parse(xml_file)
+                    root = tree.getroot()
+
+                    # Проверяем, что корневой элемент - <categories>
+                    if root.tag != 'categories':
+                        messages.error(request, 'Некорректный формат XML: ожидается корневой элемент <categories>.')
+                        return redirect('admin_categories')
+
+                    # Обрабатываем каждую категорию
+                    for item in root.findall('category'):
+                        name_official = item.find('name_official')
+                        name_short = item.find('name_short')
+
+                        # Проверяем, что элемент <name_official> существует и не пустой
+                        if name_official is not None and name_official.text:
+                            # Создаем категорию, если название не пустое
+                            Category.objects.create(
+                                name_official=name_official.text,
+                                name_short=name_short.text if name_short is not None else None
+                            )
+                        else:
+                            messages.warning(request, 'Найдена категория без названия. Пропущено.')
+
+                    messages.success(request, 'Категории успешно загружены из XML.')
+                except ET.ParseError as e:
+                    messages.error(request, f'Ошибка при разборе XML: {str(e)}')
+                except Exception as e:
+                    messages.error(request, f'Ошибка при обработке XML: {str(e)}')
+            else:
+                messages.error(request, 'Файл не выбран.')
+
+        # Массовое удаление
+        elif 'mass_delete' in request.POST:
+            selected_categories = request.POST.getlist('selected_categories')
+            if selected_categories:
+                Category.objects.filter(id__in=selected_categories).delete()
+                messages.success(request, 'Выбранные категории успешно удалены.')
+            else:
+                messages.error(request, 'Не выбрано ни одной категории для удаления.')
+
+    categories = Category.objects.all()
+    return render(request, 'admin/categories.html', {'categories': categories})
+
+
+# Администратор:: Изменение данных категорий
+@login_required
+@user_passes_test(is_admin)
+def edit_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+
+    if request.method == 'POST':
+        # Получаем данные из формы
+        name_official = request.POST.get('name_official')
+        name_short = request.POST.get('name_short')
+
+        # Обновляем данные категории
+        if name_official:
+            category.name_official = name_official
+            category.name_short = name_short
+            category.save()
+            messages.success(request, 'Категория успешно изменена.')
+            return redirect('admin_categories')
+        else:
+            messages.error(request, 'Официальное название обязательно.')
+
+    return render(request, 'admin/edit_category.html', {'category': category})
+
+
+@login_required
+@user_passes_test(is_admin)
+def delete_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if request.method == 'POST':
+        category.delete()
+        messages.success(request, 'Категория успешно удалена.')
+    return redirect('admin_categories')
+
+
+# Страница управления пользователями
+@login_required
+@user_passes_test(is_admin)
+def admin_users(request):
+    users = User.objects.all()
+    return render(request, 'admin/users.html', {'users': users})
+
+# Страница создания сотрудника городской службы
+@login_required
+@user_passes_test(is_admin)
+def admin_create_employee(request):
+    if request.method == 'POST':
+        # Логика создания сотрудника
+        pass
+    return render(request, 'admin/create_employee.html')
+
+# Страница просмотра всех обращений
+@login_required
+@user_passes_test(is_admin)
+def admin_all_appeals(request):
+    appeals = Appeals.objects.all()
+    return render(request, 'admin/all_appeals.html', {'appeals': appeals})
