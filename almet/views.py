@@ -9,8 +9,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm
-from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki
-from django.db.models import OuterRef, Subquery
+from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki, \
+    Service
+from django.db.models import OuterRef, Subquery, Q
 import xml.etree.ElementTree as ET
 
 def index(request):
@@ -135,6 +136,17 @@ def logout_view(request):
     messages.success(request, 'Вы успешно вышли из системы.')
     return redirect('index')
 
+
+# Городская служба
+@login_required
+def employee_appeals(request):
+    # Проверяем, что пользователь является сотрудником
+    if not request.user.id_sotrudnik:
+        return redirect('profile')  # Перенаправляем, если пользователь не сотрудник
+
+    # Получаем обращения, назначенные текущему сотруднику
+    appeals = Appeals.objects.filter(id_sotrudnik=request.user.id_sotrudnik)
+    return render(request, 'service/appeals_service.html', {'appeals': appeals})
 
 # Житель
 @login_required
@@ -345,13 +357,84 @@ def delete_category(request, category_id):
     return redirect('admin_categories')
 
 
+
+
 # Страница управления пользователями
 @login_required
 @user_passes_test(is_admin)
 def admin_users(request):
     users = User.objects.all()
-    return render(request, 'admin/users.html', {'users': users})
+    services = Service.objects.all()
 
+    # Фильтр по роли
+    role_filter = request.GET.get('role')
+    if role_filter == 'citizen':
+        users = users.filter(id_sotrudnik__isnull=True, is_staff=False, is_superuser=False)
+    elif role_filter == 'employee':
+        users = users.filter(id_sotrudnik__isnull=False)
+
+    # Фильтр по службе
+    service_filter = request.GET.get('service')
+    if service_filter:
+        users = users.filter(id_sotrudnik__id_service=service_filter)
+
+    # Поиск по ФИО
+    search_query = request.GET.get('search')
+    if search_query:
+        users = users.filter(
+            Q(id_citizen__surname__icontains=search_query) |
+            Q(id_citizen__name__icontains=search_query) |
+            Q(id_citizen__patronymic__icontains=search_query) |
+            Q(id_sotrudnik__surname__icontains=search_query) |
+            Q(id_sotrudnik__name__icontains=search_query) |
+            Q(id_sotrudnik__patronymic__icontains=search_query)
+        )
+
+    return render(request, 'admin/users.html', {
+        'users': users,
+        'services': services,
+        'role_filter': role_filter,
+        'service_filter': service_filter,
+        'search_query': search_query,
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def change_role(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    services = Service.objects.all()
+
+    if request.method == 'POST':
+        role = request.POST.get('role')
+        service_id = request.POST.get('service')
+
+        if role == 'employee':
+            # Превращаем пользователя в сотрудника
+            if not user.id_sotrudnik:
+                service = get_object_or_404(Service, id=service_id)
+                employee = Sotrudniki.objects.create(
+                    surname=user.id_citizen.surname if user.id_citizen else 'Unknown',
+                    name=user.id_citizen.name if user.id_citizen else 'Unknown',
+                    id_service=service
+                )
+                user.id_sotrudnik = employee
+                user.save()
+                messages.success(request, f'Пользователь {user.email} теперь сотрудник.')
+        elif role == 'user':
+            # Превращаем сотрудника в пользователя
+            if user.id_sotrudnik:
+                user.id_sotrudnik.delete()
+                user.id_sotrudnik = None
+                user.save()
+                messages.success(request, f'Сотрудник {user.email} теперь пользователь.')
+
+        return redirect('admin_users')
+
+    return render(request, 'admin/change_role.html', {
+        'user': user,
+        'services': services,
+    })
 
 
 # Страница создания городской службы на сайте
@@ -420,9 +503,34 @@ def admin_create_employee(request):
         form = EmployeeRegistrationForm()
     return render(request, 'admin/create_employee.html', {'form': form})
 
+
+
 # Страница просмотра всех обращений
 @login_required
 @user_passes_test(is_admin)
 def admin_all_appeals(request):
     appeals = Appeals.objects.all()
-    return render(request, 'admin/all_appeals.html', {'appeals': appeals})
+    employees = Sotrudniki.objects.all()
+    return render(request, 'admin/all_appeals.html', {
+        'appeals': appeals,
+        'employees': employees,
+    })
+
+@login_required
+@user_passes_test(is_admin)
+def assign_employee(request, appeal_id):
+    appeal = get_object_or_404(Appeals, id=appeal_id)
+    if request.method == 'POST':
+        employee_id = request.POST.get('employee')
+        if employee_id:
+            employee = get_object_or_404(Sotrudniki, id=employee_id)
+            appeal.id_sotrudnik = employee
+            appeal.save()
+            messages.success(request, f'Обращение {appeal.id} назначено на сотрудника {employee.surname} {employee.name}.')
+        else:
+            appeal.id_sotrudnik = None
+            appeal.save()
+            messages.success(request, f'Обращение {appeal.id} больше не назначено на сотрудника.')
+    return redirect('admin_all_appeals')
+
+

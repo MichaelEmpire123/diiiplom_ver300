@@ -40,12 +40,27 @@ class EmployeeRegistrationForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Переопределяем labels и добавляем классы Bootstrap
-        self.fields['email'].widget.attrs.update({'class': 'form-control'})
-        self.fields['surname'].widget.attrs.update({'class': 'form-control'})
-        self.fields['name'].widget.attrs.update({'class': 'form-control'})
-        self.fields['patronymic'].widget.attrs.update({'class': 'form-control'})
-        self.fields['service'].widget.attrs.update({'class': 'form-control'})
+        # Добавляем классы Bootstrap и плейсхолдеры
+        self.fields['email'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Введите email'
+        })
+        self.fields['surname'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Введите фамилию'
+        })
+        self.fields['name'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Введите имя'
+        })
+        self.fields['patronymic'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Введите отчество (необязательно)'
+        })
+        self.fields['service'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Выберите службу'
+        })
 
 
 class ServiceForm(forms.ModelForm):
@@ -63,8 +78,52 @@ class ServiceForm(forms.ModelForm):
         self.fields['flat'].label = 'Квартира'
         self.fields['tel'].label = 'Телефон'
 
+        # Добавляем классы Bootstrap и плейсхолдеры
+        self.fields['name'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Введите название службы'
+        })
+        self.fields['id_city'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Выберите город'
+        })
+        self.fields['id_street'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Выберите улицу'
+        })
+        self.fields['house'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Введите номер дома'
+        })
+        self.fields['flat'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Введите номер квартиры (необязательно)'
+        })
+        self.fields['tel'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Введите телефон'
+        })
+
+
+
+class ChangeRoleForm(forms.Form):
+    ROLE_CHOICES = [
+        ('user', 'Пользователь'),
+        ('employee', 'Сотрудник'),
+    ]
+    role = forms.ChoiceField(choices=ROLE_CHOICES, label='Роль')
+
+class AssignServiceForm(forms.Form):
+    service = forms.ModelChoiceField(queryset=Service.objects.all(), label='Служба')
+
+
+
+
+
 
 class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
         fields = ['message']
+
+

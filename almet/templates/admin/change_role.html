@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Изменение роли пользователя{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Изменение роли пользователя: {{ user.email }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+
+        <!-- Поле для выбора роли -->
+        <div class="mb-3">
+            <label for="id_role" class="form-label">Роль</label>
+            <select name="role" id="id_role" class="form-control" onchange="toggleServiceField()">
+                <option value="user" {% if not user.id_sotrudnik %}selected{% endif %}>Пользователь</option>
+                <option value="employee" {% if user.id_sotrudnik %}selected{% endif %}>Сотрудник</option>
+            </select>
+        </div>
+
+        <!-- Поле для выбора службы (скрыто по умолчанию) -->
+        <div class="mb-3" id="service_field" style="display: none;">
+            <label for="id_service" class="form-label">Служба</label>
+            <select name="service" id="id_service" class="form-control">
+                {% for service in services %}
+                    <option value="{{ service.id }}" {% if user.id_sotrudnik and user.id_sotrudnik.id_service == service %}selected{% endif %}>
+                        {{ service.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <a href="{% url 'admin_users' %}" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
+
+<script>
+    function toggleServiceField() {
+        const roleField = document.getElementById('id_role');
+        const serviceField = document.getElementById('service_field');
+        if (roleField.value === 'employee') {
+            serviceField.style.display = 'block';
+        } else {
+            serviceField.style.display = 'none';
+        }
+    }
+
+    // Вызов функции при загрузке страницы
+    document.addEventListener('DOMContentLoaded', toggleServiceField);
+</script>
+{% endblock %}

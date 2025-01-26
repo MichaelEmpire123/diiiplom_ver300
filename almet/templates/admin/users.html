@@ -5,12 +5,55 @@
 {% block content %}
 <div class="container">
     <h2>Управление пользователями</h2>
+
+    <!-- Форма для фильтрации и поиска -->
+    <form method="get" class="mb-4">
+        <div class="row g-3">
+            <!-- Фильтр по роли -->
+            <div class="col-md-3">
+                <label for="role" class="form-label">Роль</label>
+                <select name="role" id="role" class="form-select">
+                    <option value="">Все</option>
+                    <option value="citizen" {% if role_filter == 'citizen' %}selected{% endif %}>Жители</option>
+                    <option value="employee" {% if role_filter == 'employee' %}selected{% endif %}>Сотрудники</option>
+                </select>
+            </div>
+
+            <!-- Фильтр по службе -->
+            <div class="col-md-3">
+                <label for="service" class="form-label">Служба</label>
+                <select name="service" id="service" class="form-select">
+                    <option value="">Все</option>
+                    {% for service in services %}
+                        <option value="{{ service.id }}" {% if service_filter == service.id|stringformat:"s" %}selected{% endif %}>
+                            {{ service.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Поиск по ФИО -->
+            <div class="col-md-4">
+                <label for="search" class="form-label">Поиск по ФИО</label>
+                <input type="text" name="search" id="search" class="form-control" value="{{ search_query|default:'' }}" placeholder="Введите ФИО">
+            </div>
+
+            <!-- Кнопка "Применить" -->
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Применить</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Таблица пользователей -->
     <table class="table">
         <thead>
             <tr>
                 <th>ID</th>
                 <th>Email</th>
+                <th>ФИО</th> <!-- Новая колонка -->
                 <th>Роль</th>
+                <th>Действия</th>
             </tr>
         </thead>
         <tbody>
@@ -19,6 +62,18 @@
                 <td>{{ user.id }}</td>
                 <td>{{ user.email }}</td>
                 <td>
+                    {% if user.id_citizen %}
+                        <!-- ФИО для жителя -->
+                        {{ user.id_citizen.surname }} {{ user.id_citizen.name }} {{ user.id_citizen.patronymic|default:"" }}
+                    {% elif user.id_sotrudnik %}
+                        <!-- ФИО для сотрудника -->
+                        {{ user.id_sotrudnik.surname }} {{ user.id_sotrudnik.name }} {{ user.id_sotrudnik.patronymic|default:"" }}
+                    {% else %}
+                        <!-- Если ФИО отсутствует -->
+                        Не указано
+                    {% endif %}
+                </td>
+                <td>
                     {% if user.is_superuser %}
                         Суперпользователь
                     {% elif user.is_staff %}
@@ -26,8 +81,16 @@
                     {% elif user.id_sotrudnik %}
                         Сотрудник
                     {% else %}
-                        Пользователь
+                        Житель
                     {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'change_role' user.id %}" class="btn btn-warning btn-sm">Изменить роль</a>
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit" name="delete_user" class="btn btn-danger btn-sm">Удалить</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}

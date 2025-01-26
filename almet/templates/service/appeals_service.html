@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Обращения к службе{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Обращения к службе</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Гражданин</th>
+                <th>Описание</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appeal in appeals %}
+            <tr>
+                <td>{{ appeal.id }}</td>
+                <td>{{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</td>
+                <td>{{ appeal.description_problem }}</td>
+                <td>{{ appeal.processing_appeals_set.last.id_status.name_status }}</td>
+                <td>
+                    <a href="#" class="btn btn-primary btn-sm">Просмотреть</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Нет обращений, назначенных вам.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
