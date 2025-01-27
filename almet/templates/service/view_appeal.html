@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Просмотр обращения #{{ appeal.id }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Просмотр обращения #{{ appeal.id }}</h2>
+
+    <!-- Детали обращения -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Гражданин: {{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</h5>
+            <p class="card-text"><strong>Описание:</strong> {{ appeal.description_problem }}</p>
+            <p class="card-text"><strong>Текущий статус:</strong> {{ appeal.processing_appeals_set.last.id_status.name_status }}</p>
+            {% if appeal.photo %}
+                <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid">
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Форма изменения статуса -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Изменить статус</h5>
+            <form method="post" action="{% url 'view_appeal' appeal.id %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="status" class="form-label">Новый статус</label>
+                    <select name="status" id="status" class="form-select">
+                        {% for status in statuses %}
+                            <option value="{{ status.id }}">{{ status.name_status }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Изменить статус</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- История статусов -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">История статусов</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Статус</th>
+                        <th>Дата и время</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for history in status_history %}
+                    <tr>
+                        <td>{{ history.id_status.name_status }}</td>
+                        <td>{{ history.date_time_setting_status }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center">История статусов отсутствует.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

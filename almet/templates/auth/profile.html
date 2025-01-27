@@ -29,7 +29,7 @@
                     <p>Фамилия: {{ user.id_sotrudnik.surname }}</p>
                     <p>Имя: {{ user.id_sotrudnik.name }}</p>
                     <p>Отчество: {{ user.id_sotrudnik.patronymic }}</p>
-                    <p>Служба: {{ user.id_sotrudnik.id_service.name_service }}</p>
+                    <p>Служба: {{ user.id_sotrudnik.id_service.name }}</p>
                 {% endif %}
 
                 <a href="{% url 'update_profile' %}" class="btn btn-primary">Обновить профиль</a>

@@ -23,12 +23,12 @@
                 <td>{{ appeal.description_problem }}</td>
                 <td>{{ appeal.processing_appeals_set.last.id_status.name_status }}</td>
                 <td>
-                    <a href="#" class="btn btn-primary btn-sm">Просмотреть</a>
+                    <a href="{% url 'view_appeal' appeal.id %}" class="btn btn-primary btn-sm">Просмотреть</a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" class="text-center">Нет обращений, назначенных вам.</td>
+                <td colspan="5" class="text-center">Нет обращений, назначенных вашей службе.</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -12,7 +12,7 @@
                 <th>Гражданин</th>
                 <th>Описание</th>
                 <th>Статус</th>
-                <th>Назначить сотрудника</th> <!-- Новая колонка -->
+                <th>Назначить службу</th> <!-- Новая колонка -->
             </tr>
         </thead>
         <tbody>
@@ -23,13 +23,13 @@
                 <td>{{ appeal.description_problem }}</td>
                 <td>{{ appeal.processing_appeals_set.last.id_status.name_status }}</td>
                 <td>
-                    <form method="post" action="{% url 'assign_employee' appeal.id %}">
+                    <form method="post" action="{% url 'assign_service' appeal.id %}">
                         {% csrf_token %}
-                        <select name="employee" class="form-select">
+                        <select name="service" class="form-select">
                             <option value="">Не назначено</option>
-                            {% for employee in employees %}
-                                <option value="{{ employee.id }}" {% if appeal.id_sotrudnik == employee %}selected{% endif %}>
-                                    {{ employee.surname }} {{ employee.name }} ({{ employee.id_service.name }})
+                            {% for service in services %}
+                                <option value="{{ service.id }}" {% if appeal.id_service == service %}selected{% endif %}>
+                                    {{ service.name }}
                                 </option>
                             {% endfor %}
                         </select>

@@ -18,6 +18,8 @@ urlpatterns = [
 
     # Служба
     path('employee/appeals/', views.employee_appeals, name='employee_appeals'),
+    path('employee/appeals/<int:appeal_id>/', views.view_appeal, name='view_appeal'),
+
 
     # Администратор
     path('administrator/categories/', views.admin_categories, name='admin_categories'),
@@ -28,5 +30,5 @@ urlpatterns = [
     path('administrator/create_service/', views.admin_create_service, name='admin_create_service'),  # Новый маршрут
     path('administrator/create_employee/', views.admin_create_employee, name='admin_create_employee'),
     path('administrator/all_appeals/', views.admin_all_appeals, name='admin_all_appeals'),
-    path('administrator/assign_employee/<int:appeal_id>/', views.assign_employee, name='assign_employee'),
+    path('administrator/assign_service/<int:appeal_id>/', views.assign_service, name='assign_service')
 ]

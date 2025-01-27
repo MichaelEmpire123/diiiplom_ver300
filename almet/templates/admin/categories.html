@@ -6,6 +6,38 @@
 <div class="container">
     <h2>Управление категориями</h2>
 
+    <!-- Форма для добавления категории -->
+    <div class="mb-4">
+        <h4>Добавить категорию</h4>
+        <form method="post" action="{% url 'admin_categories' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name_official">Официальное название:</label>
+                <input type="text" name="name_official" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="name_short">Краткое название:</label>
+                <input type="text" name="name_short" class="form-control">
+            </div>
+            <br>
+            <button type="submit" name="add_category" class="btn btn-primary">Добавить</button>
+        </form>
+    </div>
+
+    <!-- Форма для загрузки XML или Excel -->
+    <div class="mb-4">
+        <h4>Загрузить категории из XML или Excel</h4>
+        <form method="post" action="{% url 'admin_categories' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="file">Файл (XML или Excel):</label>
+                <input type="file" name="file" class="form-control-file" accept=".xml, .xlsx, .xls" required>
+            </div>
+            <br>
+            <button type="submit" name="upload_file" class="btn btn-primary">Загрузить</button>
+        </form>
+    </div>
+
     <!-- Форма для массового удаления -->
     <form method="post" action="{% url 'admin_categories' %}" id="mass-delete-form">
         {% csrf_token %}
@@ -45,36 +77,6 @@
             </tbody>
         </table>
     </form>
-
-    <!-- Форма для добавления категории -->
-    <div class="mb-4">
-        <h4>Добавить категорию</h4>
-        <form method="post" action="{% url 'admin_categories' %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="name_official">Официальное название:</label>
-                <input type="text" name="name_official" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="name_short">Краткое название:</label>
-                <input type="text" name="name_short" class="form-control">
-            </div>
-            <button type="submit" name="add_category" class="btn btn-primary">Добавить</button>
-        </form>
-    </div>
-
-    <!-- Форма для загрузки XML -->
-    <div class="mb-4">
-        <h4>Загрузить категории из XML</h4>
-        <form method="post" action="{% url 'admin_categories' %}" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="xml_file">XML-файл:</label>
-                <input type="file" name="xml_file" class="form-control-file" accept=".xml" required>
-            </div>
-            <button type="submit" name="upload_xml" class="btn btn-primary">Загрузить</button>
-        </form>
-    </div>
 </div>
 
 <!-- Скрипт для подтверждения массового удаления -->

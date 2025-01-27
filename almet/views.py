@@ -1,6 +1,6 @@
 import secrets
 import string
-
+import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse
@@ -144,9 +144,52 @@ def employee_appeals(request):
     if not request.user.id_sotrudnik:
         return redirect('profile')  # Перенаправляем, если пользователь не сотрудник
 
-    # Получаем обращения, назначенные текущему сотруднику
-    appeals = Appeals.objects.filter(id_sotrudnik=request.user.id_sotrudnik)
+    # Получаем службу, к которой относится сотрудник
+    service = request.user.id_sotrudnik.id_service
+
+    # Получаем обращения, назначенные на службу
+    appeals = Appeals.objects.filter(id_service=service)
     return render(request, 'service/appeals_service.html', {'appeals': appeals})
+
+@login_required
+def view_appeal(request, appeal_id):
+    # Получаем обращение
+    appeal = get_object_or_404(Appeals, id=appeal_id)
+
+    # Проверяем, что обращение назначено на службу сотрудника
+    if appeal.id_service != request.user.id_sotrudnik.id_service:
+        messages.error(request, 'У вас нет доступа к этому обращению.')
+        return redirect('employee_appeals')
+
+    # Получаем все возможные статусы
+    statuses = Status.objects.all()
+
+    # Обработка изменения статуса
+    if request.method == 'POST':
+        new_status_id = request.POST.get('status')
+        if new_status_id:
+            new_status = get_object_or_404(Status, id=new_status_id)
+            # Создаем новую запись об изменении статуса
+            Processing_appeals.objects.create(
+                id_appeal=appeal,
+                id_status=new_status,
+                date_time_setting_status=timezone.now(),
+            )
+            messages.success(request, f'Статус обращения {appeal.id} изменен на {new_status.name_status}.')
+            return redirect('view_appeal', appeal_id=appeal.id)
+
+    # Получаем историю изменений статусов
+    status_history = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status')
+
+    return render(request, 'service/view_appeal.html', {
+        'appeal': appeal,
+        'statuses': statuses,
+        'status_history': status_history,
+    })
+
+
+# _______________________
+
 
 # Житель
 @login_required
@@ -274,39 +317,72 @@ def admin_categories(request):
             else:
                 messages.error(request, 'Официальное название обязательно.')
 
-        # Загрузка XML
-        elif 'upload_xml' in request.POST:
-            xml_file = request.FILES.get('xml_file')
-            if xml_file:
+        # Загрузка файла (XML или Excel)
+        elif 'upload_file' in request.POST:
+            uploaded_file = request.FILES.get('file')
+            if uploaded_file:
+                file_name = uploaded_file.name.lower()  # Приводим имя файла к нижнему регистру
                 try:
-                    tree = ET.parse(xml_file)
-                    root = tree.getroot()
+                    if file_name.endswith('.xml'):
+                        # Обработка XML-файла
+                        tree = ET.parse(uploaded_file)
+                        root = tree.getroot()
 
-                    # Проверяем, что корневой элемент - <categories>
-                    if root.tag != 'categories':
-                        messages.error(request, 'Некорректный формат XML: ожидается корневой элемент <categories>.')
-                        return redirect('admin_categories')
+                        # Проверяем, что корневой элемент - <categories>
+                        if root.tag != 'categories':
+                            messages.error(request, 'Некорректный формат XML: ожидается корневой элемент <categories>.')
+                            return redirect('admin_categories')
 
-                    # Обрабатываем каждую категорию
-                    for item in root.findall('category'):
-                        name_official = item.find('name_official')
-                        name_short = item.find('name_short')
+                        # Обрабатываем каждую категорию
+                        for item in root.findall('category'):
+                            name_official = item.find('name_official')
+                            name_short = item.find('name_short')
 
-                        # Проверяем, что элемент <name_official> существует и не пустой
-                        if name_official is not None and name_official.text:
-                            # Создаем категорию, если название не пустое
-                            Category.objects.create(
-                                name_official=name_official.text,
-                                name_short=name_short.text if name_short is not None else None
-                            )
-                        else:
-                            messages.warning(request, 'Найдена категория без названия. Пропущено.')
+                            # Проверяем, что элемент <name_official> существует и не пустой
+                            if name_official is not None and name_official.text:
+                                # Создаем категорию, если название не пустое
+                                Category.objects.create(
+                                    name_official=name_official.text,
+                                    name_short=name_short.text if name_short is not None else None
+                                )
+                            else:
+                                messages.warning(request, 'Найдена категория без названия. Пропущено.')
 
-                    messages.success(request, 'Категории успешно загружены из XML.')
+                        messages.success(request, 'Категории успешно загружены из XML.')
+
+                    elif file_name.endswith(('.xlsx', '.xls')):
+                        # Обработка Excel-файла
+                        df = pd.read_excel(uploaded_file)
+
+                        # Проверяем, что в файле есть необходимая колонка
+                        if 'name_official' not in df.columns:
+                            messages.error(request, 'В файле отсутствует колонка "name_official".')
+                            return redirect('admin_categories')
+
+                        # Обрабатываем каждую строку в файле
+                        for index, row in df.iterrows():
+                            name_official = row['name_official']
+                            name_short = row.get('name_short', None)  # Колонка name_short может отсутствовать
+
+                            if pd.notna(name_official):  # Проверяем, что name_official не пустой
+                                Category.objects.create(
+                                    name_official=name_official,
+                                    name_short=name_short
+                                )
+                            else:
+                                messages.warning(request, f'Найдена категория без названия в строке {index + 1}. Пропущено.')
+
+                        messages.success(request, 'Категории успешно загружены из Excel.')
+
+                    else:
+                        messages.error(request, 'Неподдерживаемый формат файла. Разрешены только XML, XLSX или XLS.')
+
                 except ET.ParseError as e:
                     messages.error(request, f'Ошибка при разборе XML: {str(e)}')
+                except pd.errors.EmptyDataError:
+                    messages.error(request, 'Файл Excel пуст или имеет неправильный формат.')
                 except Exception as e:
-                    messages.error(request, f'Ошибка при обработке XML: {str(e)}')
+                    messages.error(request, f'Ошибка при обработке файла: {str(e)}')
             else:
                 messages.error(request, 'Файл не выбран.')
 
@@ -319,6 +395,7 @@ def admin_categories(request):
             else:
                 messages.error(request, 'Не выбрано ни одной категории для удаления.')
 
+    # Получаем все категории для отображения
     categories = Category.objects.all()
     return render(request, 'admin/categories.html', {'categories': categories})
 
@@ -510,27 +587,27 @@ def admin_create_employee(request):
 @user_passes_test(is_admin)
 def admin_all_appeals(request):
     appeals = Appeals.objects.all()
-    employees = Sotrudniki.objects.all()
+    services = Service.objects.all()  # Получаем все городские службы
     return render(request, 'admin/all_appeals.html', {
         'appeals': appeals,
-        'employees': employees,
+        'services': services,  # Передаем службы в шаблон
     })
 
 @login_required
 @user_passes_test(is_admin)
-def assign_employee(request, appeal_id):
+def assign_service(request, appeal_id):
     appeal = get_object_or_404(Appeals, id=appeal_id)
     if request.method == 'POST':
-        employee_id = request.POST.get('employee')
-        if employee_id:
-            employee = get_object_or_404(Sotrudniki, id=employee_id)
-            appeal.id_sotrudnik = employee
+        service_id = request.POST.get('service')
+        if service_id:
+            service = get_object_or_404(Service, id=service_id)
+            appeal.id_service = service
             appeal.save()
-            messages.success(request, f'Обращение {appeal.id} назначено на сотрудника {employee.surname} {employee.name}.')
+            messages.success(request, f'Обращение {appeal.id} назначено на службу {service.name}.')
         else:
-            appeal.id_sotrudnik = None
+            appeal.id_service = None
             appeal.save()
-            messages.success(request, f'Обращение {appeal.id} больше не назначено на сотрудника.')
+            messages.success(request, f'Обращение {appeal.id} больше не назначено на службу.')
     return redirect('admin_all_appeals')
 
 

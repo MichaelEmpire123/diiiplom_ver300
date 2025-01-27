@@ -75,6 +75,7 @@ class Appeals(models.Model):
     description_problem = models.TextField()
     photo = models.ImageField(upload_to=get_upload_path, blank=True, null=True)
     id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.CASCADE, blank=True, null=True)
+    id_service = models.ForeignKey('Service', on_delete=models.CASCADE, blank=True, null=True)  # Связь с городской службой
 
     def __str__(self):
         return f"Обращение {self.id} by {self.id_sitizen}"
