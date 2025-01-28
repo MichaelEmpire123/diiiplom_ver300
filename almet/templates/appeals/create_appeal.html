@@ -6,20 +6,65 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
         <h2 class="text-center">Подача обращения</h2>
-        <form method="post" enctype="multipart/form-data" class="mt-4">
+        <form method="post" enctype="multipart/form-data" class="needs-validation mt-4" novalidate>
             {% csrf_token %}
+
             {{ form.as_p }}
-            {% if form.errors %}
-                <div class="alert alert-danger">
-                    {% for field, errors in form.errors.items %}
-                        {% for error in errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    {% endfor %}
+
+            <!-- Поле для загрузки изображений с предпросмотром и перетаскиванием -->
+            <div class="mb-3">
+                <label for="id_photos" class="form-label">Фото обращения (можно выбрать несколько)</label>
+                <div id="drop-area" class="form-control" style="height: 150px; border: 2px dashed #007bff; position: relative;">
+                    <input type="file" name="photos" class="form-control" id="id_photos" multiple style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0;" onchange="previewImages(event)">
+                    <div id="file-list" style="padding-top: 20px;"></div>
+                    <p id="drop-text" style="text-align: center; margin-top: 20px; color: #007bff;">Перетащите файлы сюда или выберите их вручную.</p>
                 </div>
-            {% endif %}
+            </div>
+
             <button type="submit" class="btn btn-primary">Отправить</button>
         </form>
     </div>
 </div>
+
+<script>
+    // Функция для предпросмотра изображений
+    function previewImages(event) {
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = ''; // Очистить список при каждом новом выборе файлов
+
+        const files = event.target.files;
+
+        for (let i = 0; i < files.length; i++) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imgElement = document.createElement('img');
+                imgElement.src = e.target.result;
+                imgElement.style.width = '100px';
+                imgElement.style.margin = '10px';
+                fileList.appendChild(imgElement);
+            }
+            reader.readAsDataURL(files[i]);
+        }
+    }
+
+    // Функция для обработки перетаскивания файлов
+    const dropArea = document.getElementById('drop-area');
+    dropArea.addEventListener('dragover', function(event) {
+        event.preventDefault();
+        dropArea.style.backgroundColor = '#f0f8ff'; // Изменение фона при перетаскивании
+    });
+
+    dropArea.addEventListener('dragleave', function(event) {
+        dropArea.style.backgroundColor = ''; // Восстановление фона
+    });
+
+    dropArea.addEventListener('drop', function(event) {
+        event.preventDefault();
+        const files = event.dataTransfer.files;
+        const input = document.getElementById('id_photos');
+        input.files = files; // Добавление перетащенных файлов в поле ввода
+        previewImages({ target: input }); // Обновление предпросмотра
+    });
+</script>
+
 {% endblock %}

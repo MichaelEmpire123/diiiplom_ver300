@@ -14,6 +14,8 @@ from .models import User, Citizen, Street, City, Status, Appeals, Message, Proce
 from django.db.models import OuterRef, Subquery, Q
 import xml.etree.ElementTree as ET
 
+
+
 def index(request):
     return render(request, 'almet/index.html')
 
@@ -513,6 +515,29 @@ def change_role(request, user_id):
         'services': services,
     })
 
+@login_required
+@user_passes_test(is_admin)
+def delete_user(request, user_id):
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id)
+
+        # Удаляем связанного жителя, если он существует
+        if user.id_citizen:
+            user.id_citizen.delete()
+
+        # Удаляем связанного сотрудника, если он существует
+        if user.id_sotrudnik:
+            user.id_sotrudnik.delete()
+
+        # Удаляем самого пользователя
+        user.delete()
+
+        messages.success(request, 'Пользователь и связанные данные успешно удалены.')
+        return redirect('admin_users')  # Перенаправляем на страницу управления пользователями
+
+    messages.error(request, 'Неверный запрос.')
+    return redirect('admin_users')
+
 
 # Страница создания городской службы на сайте
 @login_required
@@ -523,11 +548,48 @@ def admin_create_service(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Городская служба успешно создана.')
-            return redirect('admin_create_service')
+            return redirect('admin_manage_services')
     else:
         form = ServiceForm()
 
-    return render(request, 'admin/create_service.html', {'form': form})
+        # Получаем все городские службы
+    services = Service.objects.all()
+
+    return render(request, 'admin/create_service.html', {'form': form, 'services': services})
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_service_list(request):
+    services = Service.objects.all()  # Получаем все городские службы
+    return render(request, 'admin/create_service.html', {'services': services})
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_edit_service(request, service_id):
+    service = get_object_or_404(Service, id=service_id)  # Получаем службу по ID
+
+    if request.method == 'POST':
+        form = ServiceForm(request.POST, instance=service)  # Используем instance для редактирования
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Городская служба успешно обновлена.')
+            return redirect('admin_create_service')  # Перенаправляем на список служб
+    else:
+        form = ServiceForm(instance=service)  # Передаём существующую службу в форму
+
+    return render(request, 'admin/edit_service.html', {'form': form, 'service': service})
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_delete_service(request, service_id):
+    service = get_object_or_404(Service, id=service_id)
+    service.delete()
+    messages.success(request, 'Городская служба успешно удалена.')
+    return redirect('admin_create_service')
+
 
 
 # Страница создания сотрудника городской службы
@@ -609,5 +671,8 @@ def assign_service(request, appeal_id):
             appeal.save()
             messages.success(request, f'Обращение {appeal.id} больше не назначено на службу.')
     return redirect('admin_all_appeals')
+
+
+
 
 

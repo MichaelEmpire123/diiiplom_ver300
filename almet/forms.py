@@ -8,9 +8,9 @@ def validate_image_format(file):
     valid_formats = ['image/png', 'image/jpeg', 'image/jpg', 'image/bmp']
     if file.content_type not in valid_formats:
         raise ValidationError('Файл должен быть в формате PNG, JPG, JPEG или BMP.')
-    max_size = 5 * 1024 * 1024  # 5 МБ
+    max_size = 100 * 1024 * 1024  # 5 МБ
     if file.size > max_size:
-        raise ValidationError('Размер файла не должен превышать 5 МБ.')
+        raise ValidationError('Размер файла не должен превышать 100 МБ.')
 
 
 class AppealForm(forms.ModelForm):
@@ -25,6 +25,19 @@ class AppealForm(forms.ModelForm):
         self.fields['id_category'].label = 'Категория'
         self.fields['description_problem'].label = 'Описание проблемы'
         self.fields['photo'].label = 'Фото проблемы'
+
+        # Добавляем стили Bootstrap к полям
+        for field_name, field in self.fields.items():
+            if field_name == 'id_category':
+                field.widget.attrs.update({
+                    'class': 'form-select',  # Для выпадающего меню используем form-select
+                    'placeholder': field.label,
+                })
+            else:
+                field.widget.attrs.update({
+                    'class': 'form-control',  # Для всех остальных полей — form-control
+                    'placeholder': field.label,
+                })
 
         # Добавляем валидатор для фото
         self.fields['photo'].validators.append(validate_image_format)
