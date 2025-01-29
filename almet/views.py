@@ -388,6 +388,16 @@ def is_admin(user):
 @login_required
 @user_passes_test(is_admin)
 def admin_categories(request):
+    search_query = request.GET.get('search', '')  # Получаем поисковый запрос из GET-параметра
+
+    # Фильтрация категорий по поисковому запросу
+    if search_query:
+        categories = Category.objects.filter(
+            Q(name_official__icontains=search_query) | Q(name_short__icontains=search_query)
+        )
+    else:
+        categories = Category.objects.all()
+
     if request.method == 'POST':
         # Добавление категории
         if 'add_category' in request.POST:
@@ -477,10 +487,7 @@ def admin_categories(request):
             else:
                 messages.error(request, 'Не выбрано ни одной категории для удаления.')
 
-    # Получаем все категории для отображения
-    categories = Category.objects.all()
-    return render(request, 'admin/categories.html', {'categories': categories})
-
+    return render(request, 'admin/categories.html', {'categories': categories, 'search_query': search_query})
 
 # Администратор:: Изменение данных категорий
 @login_required

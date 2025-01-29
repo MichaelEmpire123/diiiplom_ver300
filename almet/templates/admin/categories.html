@@ -38,10 +38,22 @@
         </form>
     </div>
 
+    <!-- Форма для поиска -->
+        <div class="mb-4">
+            <h4>Поиск категорий</h4>
+            <form method="get" action="{% url 'admin_categories' %}">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Введите название категории" value="{{ search_query|default:'' }}">
+                    <button type="submit" class="btn btn-primary">Найти</button>
+                </div>
+            </form>
+        </div>
+
     <!-- Форма для массового удаления -->
     <form method="post" action="{% url 'admin_categories' %}" id="mass-delete-form">
         {% csrf_token %}
         <button type="submit" name="mass_delete" class="btn btn-danger mb-3">Удалить выбранные</button>
+
 
         <!-- Таблица категорий -->
         <table class="table">
@@ -55,25 +67,31 @@
                 </tr>
             </thead>
             <tbody>
-                {% for category in categories %}
-                <tr>
-                    <td>
-                        <input type="checkbox" name="selected_categories" value="{{ category.id }}">
-                    </td>
-                    <td>{{ category.id }}</td>
-                    <td>{{ category.name_official }}</td>
-                    <td>{{ category.name_short }}</td>
-                    <td>
-                        <!-- Кнопка "Изменить" -->
-                        <a href="{% url 'edit_category' category.id %}" class="btn btn-sm btn-warning">Изменить</a>
-                        <!-- Кнопка "Удалить" -->
-                        <form method="post" action="{% url 'delete_category' category.id %}" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены?')">Удалить</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
+                {% if categories %}
+                    {% for category in categories %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected_categories" value="{{ category.id }}">
+                        </td>
+                        <td>{{ category.id }}</td>
+                        <td>{{ category.name_official }}</td>
+                        <td>{{ category.name_short }}</td>
+                        <td>
+                            <!-- Кнопка "Изменить" -->
+                            <a href="{% url 'edit_category' category.id %}" class="btn btn-sm btn-warning">Изменить</a>
+                            <!-- Кнопка "Удалить" -->
+                            <form method="post" action="{% url 'delete_category' category.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены?')">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">Категории не найдены.</td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
     </form>
