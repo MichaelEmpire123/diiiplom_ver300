@@ -660,7 +660,7 @@ def admin_create_service(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Городская служба успешно создана.')
-            return redirect('admin_manage_services')
+            return redirect('admin_create_service')
     else:
         form = ServiceForm()
 
