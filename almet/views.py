@@ -1,5 +1,7 @@
 import secrets
 import string
+from datetime import datetime
+
 import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
@@ -8,6 +10,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
+from django.utils.timezone import make_aware
+
 from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm, Edit_AppealForm
 from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki, \
     Service
@@ -274,12 +278,31 @@ def view_appeals(request):
         id_appeal=OuterRef('id')
     ).order_by('-date_time_setting_status').values('id_status__name_status')[:1]
 
-    # Аннотируем обращения последним статусом
+    # Фильтрация по статусу и дате
+    status_id = request.GET.get('status')
+    date_filter = request.GET.get('date')
+
     appeals = Appeals.objects.filter(id_sitizen=request.user.id_citizen).annotate(
         latest_status=Subquery(latest_status_subquery)
     )
 
-    return render(request, 'appeals/view_appeals.html', {'appeals': appeals})
+    if status_id:
+        appeals = appeals.filter(processing_appeals__id_status=status_id)
+
+    if date_filter:
+        try:
+            date_obj = make_aware(datetime.strptime(date_filter, "%Y-%m-%d"))
+            appeals = appeals.filter(date_time__date=date_obj.date())
+        except ValueError:
+            pass
+
+    # Получаем все статусы для фильтрации
+    all_statuses = Status.objects.all()
+
+    return render(request, 'appeals/view_appeals.html', {
+        'appeals': appeals,
+        'all_statuses': all_statuses,
+    })
 
 
 @login_required

@@ -6,6 +6,23 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <h2 class="text-center">Мои обращения</h2>
+
+        <!-- Форма фильтрации -->
+        <form method="get" class="mb-3 d-flex gap-2">
+            <select name="status" class="form-select">
+                <option value="">Все статусы</option>
+                {% for status in all_statuses %}
+                    <option value="{{ status.id }}" {% if request.GET.status == status.id|stringformat:"s" %}selected{% endif %}>
+                        {{ status.name_status }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <input type="date" name="date" class="form-control" value="{{ request.GET.date|default_if_none:'' }}">
+
+            <button type="submit" class="btn btn-primary">Фильтр</button>
+        </form>
+
         <table class="table">
             <thead>
                 <tr>
@@ -22,10 +39,14 @@
                     <td>{{ appeal.id }}</td>
                     <td>{{ appeal.description_problem }}</td>
                     <td>{{ appeal.latest_status }}</td>
-                    <td>{{ appeal.date_time }}</td>
+                    <td>{{ appeal.date_time|date:"Y-m-d" }}</td>
                     <td>
                         <a href="{% url 'appeal_detail' appeal.id %}" class="btn btn-primary btn-sm">Просмотр</a>
                     </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">Обращения не найдены</td>
                 </tr>
                 {% endfor %}
             </tbody>

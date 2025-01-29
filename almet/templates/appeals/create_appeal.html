@@ -9,18 +9,38 @@
         <form method="post" enctype="multipart/form-data" class="needs-validation mt-4" novalidate>
             {% csrf_token %}
 
-            {{ form.as_p }}
+            <!-- Категория и описание проблемы -->
+            {{ form.id_category.label_tag }} {{ form.id_category }}
+            {{ form.description_problem.label_tag }} {{ form.description_problem }}
 
-            <button type="submit" class="btn btn-primary">Отправить</button>
+            <br>
+
+            <!-- Скрытое стандартное поле загрузки -->
+            <input type="file" id="id_photo" name="photo" class="d-none" accept="image/*" multiple onchange="previewImages(event)">
+
+            <!-- Drag & Drop область -->
+            <div id="drop-area" class="border border-primary p-3 text-center rounded mb-3"
+                 ondragover="handleDragOver(event)"
+                 ondragleave="handleDragLeave(event)"
+                 ondrop="handleDrop(event)">
+                <p class="mb-2">Перетащите изображение сюда или</p>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('id_photo').click();">
+                    Выбрать изображение
+                </button>
+            </div>
+
+            <!-- Блок для предпросмотра -->
+            <div id="file-list" class="d-flex flex-wrap"></div>
+
+            <button type="submit" class="btn btn-primary mt-3">Отправить</button>
         </form>
     </div>
 </div>
 
 <script>
-    // Функция для предпросмотра изображений
     function previewImages(event) {
         const fileList = document.getElementById('file-list');
-        fileList.innerHTML = ''; // Очистить список при каждом новом выборе файлов
+        fileList.innerHTML = ''; // Очистить список перед новым выбором
 
         const files = event.target.files;
 
@@ -29,32 +49,41 @@
             reader.onload = function(e) {
                 const imgElement = document.createElement('img');
                 imgElement.src = e.target.result;
-                imgElement.style.width = '100px';
+                imgElement.style.width = '120px';
+                imgElement.style.height = '120px';
+                imgElement.style.objectFit = 'cover';
                 imgElement.style.margin = '10px';
+                imgElement.classList.add('rounded', 'shadow-sm');
                 fileList.appendChild(imgElement);
             }
             reader.readAsDataURL(files[i]);
         }
     }
 
-    // Функция для обработки перетаскивания файлов
-    const dropArea = document.getElementById('drop-area');
-    dropArea.addEventListener('dragover', function(event) {
+    function handleDragOver(event) {
         event.preventDefault();
-        dropArea.style.backgroundColor = '#f0f8ff'; // Изменение фона при перетаскивании
-    });
+        document.getElementById('drop-area').classList.add('bg-light');
+    }
 
-    dropArea.addEventListener('dragleave', function(event) {
-        dropArea.style.backgroundColor = ''; // Восстановление фона
-    });
+    function handleDragLeave(event) {
+        document.getElementById('drop-area').classList.remove('bg-light');
+    }
 
-    dropArea.addEventListener('drop', function(event) {
+    function handleDrop(event) {
         event.preventDefault();
+        document.getElementById('drop-area').classList.remove('bg-light');
+
         const files = event.dataTransfer.files;
-        const input = document.getElementById('id_photos');
-        input.files = files; // Добавление перетащенных файлов в поле ввода
-        previewImages({ target: input }); // Обновление предпросмотра
-    });
+        const input = document.getElementById('id_photo');
+
+        const dataTransfer = new DataTransfer();
+        for (let i = 0; i < files.length; i++) {
+            dataTransfer.items.add(files[i]);
+        }
+        input.files = dataTransfer.files;
+
+        previewImages({ target: input });
+    }
 </script>
 
 {% endblock %}
