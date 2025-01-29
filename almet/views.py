@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
-from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm
+from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm, Edit_AppealForm
 from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki, \
     Service
 from django.db.models import OuterRef, Subquery, Q
@@ -281,12 +281,61 @@ def view_appeals(request):
 
     return render(request, 'appeals/view_appeals.html', {'appeals': appeals})
 
+
 @login_required
 def appeal_detail(request, appeal_id):
     appeal = get_object_or_404(Appeals, id=appeal_id, id_sitizen=request.user.id_citizen)
+
+    # Получаем последний статус обращения
+    latest_status = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status').first()
+    latest_status_name = latest_status.id_status.name_status if latest_status else "Неизвестно"
+
     statuses = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status')
 
-    return render(request, 'appeals/appeal_detail.html', {'appeal': appeal, 'statuses': statuses})
+    return render(request, 'appeals/appeal_detail.html', {
+        'appeal': appeal,
+        'statuses': statuses,
+        'latest_status': latest_status_name
+    })
+
+@login_required
+def edit_appeal(request, appeal_id):
+    appeal = get_object_or_404(Appeals, id=appeal_id, id_sitizen=request.user.id_citizen)
+
+    # Проверяем статус обращения
+    latest_status = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status').first()
+    if latest_status and latest_status.id_status.name_status != "Принято":
+        messages.error(request, "Обращение нельзя редактировать, так как оно уже в обработке.")
+        return redirect('appeal_detail', appeal_id=appeal.id)
+
+    if request.method == "POST":
+        form = Edit_AppealForm(request.POST, request.FILES, instance=appeal)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Обращение успешно обновлено.")
+            return redirect('appeal_detail', appeal_id=appeal.id)
+    else:
+        form = Edit_AppealForm(instance=appeal)
+
+    return render(request, 'appeals/edit_appeal.html', {'form': form, 'appeal': appeal})
+
+@login_required
+def delete_appeal(request, appeal_id):
+    appeal = get_object_or_404(Appeals, id=appeal_id, id_sitizen=request.user.id_citizen)
+
+    # Проверяем статус обращения
+    latest_status = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status').first()
+    if latest_status and latest_status.id_status.name_status != "Принято":
+        messages.error(request, "Обращение нельзя удалить, так как оно уже в обработке.")
+        return redirect('appeal_detail', appeal_id=appeal.id)
+
+    if request.method == "POST":
+        appeal.delete()
+        messages.success(request, "Обращение и его файлы удалены.")
+        return redirect('view_appeals')
+
+    return redirect('appeal_detail', appeal_id=appeal.id)
+
 
 
 

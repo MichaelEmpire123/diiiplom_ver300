@@ -15,6 +15,8 @@ urlpatterns = [
     path('create_appeal/', views.create_appeal, name='create_appeal'),
     path('view_appeals/', views.view_appeals, name='view_appeals'),
     path('view_appeals/detail/<int:appeal_id>/', views.appeal_detail, name='appeal_detail'),
+    path('view_appeals/detail/<int:appeal_id>/edit/', views.edit_appeal, name='edit_appeal'),
+    path('view_appeals/detail/<int:appeal_id>/delete/', views.delete_appeal, name='delete_appeal'),
 
     # чат
     path('chat/<int:appeal_id>/', views.chat, name='chat'),
@@ -38,5 +40,7 @@ urlpatterns = [
     path('administrator/all_appeals/', views.admin_all_appeals, name='admin_all_appeals'),
     path('administrator/assign_service/<int:appeal_id>/', views.assign_service, name='assign_service')
 ]
+
+
 
 

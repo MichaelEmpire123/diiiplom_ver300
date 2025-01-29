@@ -1,3 +1,5 @@
+import shutil
+
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
@@ -66,7 +68,11 @@ class Status(models.Model):
 def get_upload_path(instance, filename):
     # Генерация пути: appeals/{id}_{фамилия}_{дата}/{filename}
     date = timezone.now().strftime("%Y-%m-%d")
-    return os.path.join('appeals', f'{instance.id}_{instance.id_sitizen.surname}_{date}', filename)
+    return os.path.join('appeals', f'{instance.id_sitizen}_{instance.id_sitizen.surname}_{date}', filename)
+
+
+
+
 
 class Appeals(models.Model):
     id_sitizen = models.ForeignKey(Citizen, on_delete=models.CASCADE)
@@ -80,11 +86,20 @@ class Appeals(models.Model):
     def __str__(self):
         return f"Обращение {self.id} by {self.id_sitizen}"
 
+    def delete(self, *args, **kwargs):
+        """ Удаление фото и папки обращения при удалении записи """
+        if self.photo:
+            appeal_folder = os.path.dirname(self.photo.path)  # Получаем путь к папке обращения
+            if os.path.exists(appeal_folder):
+                shutil.rmtree(appeal_folder)  # Удаляем всю папку
+        super().delete(*args, **kwargs)  # Удаляем сам объект
+
 class Processing_appeals(models.Model):
     id_appeal = models.ForeignKey(Appeals, on_delete=models.CASCADE)
     id_status = models.ForeignKey(Status, on_delete=models.CASCADE)
     date_time_setting_status = models.DateTimeField()
     photo = models.CharField(max_length=255, blank=True, null=True)
+
 
     def __str__(self):
         return f"Обработка {self.id} для обращения {self.id_appeal}"

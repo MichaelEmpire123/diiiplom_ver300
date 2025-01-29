@@ -42,7 +42,10 @@ class AppealForm(forms.ModelForm):
         # Добавляем валидатор для фото
         self.fields['photo'].validators.append(validate_image_format)
 
-
+class Edit_AppealForm(forms.ModelForm):
+    class Meta:
+        model = Appeals
+        fields = ['description_problem', 'photo', 'id_category']
 
 class EmployeeRegistrationForm(forms.Form):
     email = forms.EmailField(label='Email')

@@ -6,10 +6,22 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <h2 class="text-center">Детали обращения #{{ appeal.id }}</h2>
+
+        <p><strong>Категория:</strong> {{ appeal.id_category.name_official }}</p>
         <p><strong>Описание:</strong> {{ appeal.description_problem }}</p>
         <p><strong>Дата создания:</strong> {{ appeal.date_time }}</p>
+        <p><strong>Текущий статус:</strong> {{ latest_status }}</p>
 
-        <h4>История статусов</h4>
+        <!-- Отображение фото, если оно есть -->
+        {% if appeal.photo %}
+            <div class="text-center">
+                <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+            </div>
+        {% else %}
+            <p class="text-muted">Фото отсутствует</p>
+        {% endif %}
+
+        <h4 class="mt-4">История статусов</h4>
         <table class="table">
             <thead>
                 <tr>
@@ -31,7 +43,19 @@
             </tbody>
         </table>
 
-        <a href="{% url 'view_appeals' %}" class="btn btn-secondary">Назад</a>
+        <!-- Кнопки редактирования и удаления, если статус "Принято" -->
+        {% if latest_status == "Принято" %}
+            <div class="d-flex justify-content-between mt-3">
+                <a href="{% url 'edit_appeal' appeal.id %}" class="btn btn-warning">Редактировать</a>
+
+                <form method="post" action="{% url 'delete_appeal' appeal.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Вы уверены, что хотите удалить это обращение?')">Удалить</button>
+                </form>
+            </div>
+        {% endif %}
+
+        <a href="{% url 'view_appeals' %}" class="btn btn-secondary mt-3">Назад</a>
     </div>
 </div>
 {% endblock %}

@@ -13,7 +13,7 @@
             <p class="card-text"><strong>Описание:</strong> {{ appeal.description_problem }}</p>
             <p class="card-text"><strong>Текущий статус:</strong> {{ appeal.processing_appeals_set.last.id_status.name_status }}</p>
             {% if appeal.photo %}
-                <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid">
+                <img style="width: 300px; height: 300px;" src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid">
             {% endif %}
         </div>
     </div>
@@ -28,7 +28,10 @@
                     <label for="status" class="form-label">Новый статус</label>
                     <select name="status" id="status" class="form-select">
                         {% for status in statuses %}
-                            <option value="{{ status.id }}">{{ status.name_status }}</option>
+                            <option value="{{ status.id }}"
+                                {% if status.id == appeal.processing_appeals_set.last.id_status.id %} selected {% endif %}>
+                                {{ status.name_status }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
