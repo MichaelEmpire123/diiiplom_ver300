@@ -84,7 +84,7 @@
                         Житель
                     {% endif %}
                 </td>
-                <td>
+                <td style="display: flex; gap: 10px;">
                     <a href="{% url 'change_role' user.id %}" class="btn btn-warning btn-sm">Изменить роль</a>
                     <form method="post" action="{% url 'delete_user' user.id %}" style="display: inline;">
                         {% csrf_token %}

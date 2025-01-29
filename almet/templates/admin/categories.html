@@ -44,7 +44,6 @@
         <form method="get" action="{% url 'admin_categories' %}">
             <div class="input-group">
                 <input type="text" name="search" class="form-control" placeholder="Введите название категории" value="{{ search_query|default:'' }}">
-                <button type="submit" class="btn btn-primary">Найти</button>
             </div>
         </form>
     </div>
@@ -73,7 +72,7 @@
                         <td>{{ category.id }}</td>
                         <td>{{ category.name_official }}</td>
                         <td>{{ category.name_short }}</td>
-                        <td>
+                        <td style="display: flex; gap: 10px;">
                             <a href="{% url 'edit_category' category.id %}" class="btn btn-sm btn-warning">Изменить</a>
                             <form method="post" action="{% url 'delete_category' category.id %}" style="display:inline;">
                                 {% csrf_token %}

@@ -45,7 +45,12 @@ class AppealForm(forms.ModelForm):
 class Edit_AppealForm(forms.ModelForm):
     class Meta:
         model = Appeals
-        fields = ['description_problem', 'photo', 'id_category']
+        fields = ['id_category', 'description_problem', 'photo']
+        widgets = {
+            'id_category': forms.Select(attrs={'class': 'form-control'}),
+            'description_problem': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
 
 class EmployeeRegistrationForm(forms.Form):
     email = forms.EmailField(label='Email')
