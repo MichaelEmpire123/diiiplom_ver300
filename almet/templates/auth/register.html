@@ -10,35 +10,35 @@
             {% csrf_token %}
             <div class="mb-3">
                 <label for="familia" class="form-label">Фамилия</label>
-                <input type="text" class="form-control" id="familia" name="familia" required>
+                <input type="text" class="form-control" id="familia" name="familia" required placeholder="Введите вашу фамилию">
             </div>
             <div class="mb-3">
                 <label for="name" class="form-label">Имя</label>
-                <input type="text" class="form-control" id="name" name="name" required>
+                <input type="text" class="form-control" id="name" name="name" required placeholder="Введите ваше имя">
             </div>
             <div class="mb-3">
                 <label for="otchestvo" class="form-label">Отчество</label>
-                <input type="text" class="form-control" id="otchestvo" name="otchestvo">
+                <input type="text" class="form-control" id="otchestvo" name="otchestvo" placeholder="Введите ваше отчество">
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" required>
+                <input type="email" class="form-control" id="email" name="email" required placeholder="Введите вашу почту">
             </div>
             <div class="mb-3">
                 <label for="tel" class="form-label">Телефон</label>
-                <input type="text" class="form-control" id="tel" name="tel" required>
+                <input type="text" class="form-control" id="tel" name="tel" required placeholder="Введите ваш телефон">
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Пароль</label>
                 <div class="input-group">
-                    <input type="password" class="form-control" id="password" name="password" required>
+                    <input type="password" class="form-control" id="password" name="password" required placeholder="Придумайте пароль">
                     <button type="button" class="btn btn-outline-secondary" id="togglePassword" onclick="togglePasswordVisibility('password', 'togglePassword')">👁️‍🗨️</button>
                 </div>
             </div>
             <div class="mb-3">
                 <label for="password2" class="form-label">Повторите пароль</label>
                 <div class="input-group">
-                    <input type="password" class="form-control" id="password2" name="password2" required>
+                    <input type="password" class="form-control" id="password2" name="password2" required placeholder="Повторите пароль">
                     <button type="button" class="btn btn-outline-secondary" id="togglePassword2" onclick="togglePasswordVisibility('password2', 'togglePassword2')">👁️‍🗨️</button>
                 </div>
             </div>
@@ -47,6 +47,9 @@
     </div>
 </div>
 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script>
     function togglePasswordVisibility(inputId, buttonId) {
         const input = document.getElementById(inputId);
@@ -59,5 +62,21 @@
             button.innerHTML = "👁️‍🗨️";
         }
     }
+
+    $(document).ready(function(){
+        $('#tel').mask('+7 (000) 000-00-00');
+    });
+
+
+    document.addEventListener("DOMContentLoaded", function() {
+        function validateCyrillic(input) {
+            input.value = input.value.replace(/[^А-Яа-яЁё\s-]/g, '');
+        }
+
+        document.getElementById("familia").addEventListener("input", function() { validateCyrillic(this); });
+        document.getElementById("name").addEventListener("input", function() { validateCyrillic(this); });
+        document.getElementById("otchestvo").addEventListener("input", function() { validateCyrillic(this); });
+    });
+
 </script>
 {% endblock %}

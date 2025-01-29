@@ -1,17 +1,16 @@
+import re
 import secrets
 import string
 from datetime import datetime
-
 import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.utils.timezone import make_aware
-
 from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm, Edit_AppealForm
 from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki, \
     Service
@@ -101,12 +100,25 @@ def register_view(request):
             messages.error(request, 'Пожалуйста, заполните все обязательные поля.')
             return render(request, 'auth/register.html')
 
+        # Регулярное выражение для проверки русских букв
+        pattern = r'^[А-Яа-яЁё]+$'
+
+        # Проверяем, что ФИО содержит только кириллицу
+        if not re.match(pattern, surname):
+            messages.error(request, 'Фамилия должна содержать только русские буквы.')
+            return render(request, 'auth/register.html')
+
+        if not re.match(pattern, name):
+            messages.error(request, 'Имя должно содержать только русские буквы.')
+            return render(request, 'auth/register.html')
+
+        if patronymic and not re.match(pattern, patronymic):  # Отчество может быть пустым
+            messages.error(request, 'Отчество должно содержать только русские буквы.')
+            return render(request, 'auth/register.html')
+
         # Создаем пользователя и запись в таблице Citizen
         try:
-            # Создаем пользователя
             user = User.objects.create_user(email=email, password=password)
-
-            # Создаем запись в таблице Citizen
             citizen = Citizen.objects.create(
                 surname=surname,
                 name=name,
@@ -118,15 +130,13 @@ def register_view(request):
                 house="",  # Указываем пустую строку вместо NULL
                 flat=0  # Указываем значение по умолчанию
             )
-
-            # Связываем пользователя с записью в таблице Citizen
             user.id_citizen = citizen
             user.save()
 
-            # Авторизуем пользователя
             login(request, user)
             messages.success(request, 'Регистрация прошла успешно!')
             return redirect('profile')
+
         except Exception as e:
             messages.error(request, f'Ошибка при регистрации: {str(e)}')
             return render(request, 'auth/register.html')
@@ -198,25 +208,33 @@ def view_appeal(request, appeal_id):
 
 
 # Житель
+
+# Функция для проверки ФИО (только кириллица)
+def validate_cyrillic(text):
+    return bool(re.fullmatch(r'^[А-ЯЁа-яё\s-]+$', text))
+
 @login_required
 def update_profile(request):
-    # Получаем текущего пользователя и связанного с ним жителя
     user = request.user
     citizen = user.id_citizen
 
     if request.method == 'POST':
-        # Получаем данные из формы
-        surname = request.POST.get('surname')
-        name = request.POST.get('name')
-        patronymic = request.POST.get('patronymic')
-        tel = request.POST.get('tel')
-        email = request.POST.get('email')
-        city_name = request.POST.get('city')
-        street_name = request.POST.get('street')
-        house = request.POST.get('house')
-        flat = request.POST.get('flat')
+        surname = request.POST.get('surname', '').strip()
+        name = request.POST.get('name', '').strip()
+        patronymic = request.POST.get('patronymic', '').strip()
+        tel = request.POST.get('tel', '').strip()
+        email = request.POST.get('email', '').strip()
+        city_name = request.POST.get('city', '').strip()
+        street_name = request.POST.get('street', '').strip()
+        house = request.POST.get('house', '').strip()
+        flat = request.POST.get('flat', '').strip()
 
-        # Обновляем данные жителя
+        # Проверка ФИО (только кириллица)
+        if not validate_cyrillic(surname) or not validate_cyrillic(name) or (patronymic and not validate_cyrillic(patronymic)):
+            messages.error(request, 'Фамилия, имя и отчество должны содержать только кириллические буквы.')
+            return render(request, 'auth/update_profile.html')
+
+        # Обновление данных
         citizen.surname = surname
         citizen.name = name
         citizen.patronymic = patronymic
@@ -225,7 +243,6 @@ def update_profile(request):
         citizen.house = house
         citizen.flat = flat
 
-        # Получаем или создаем город и улицу
         if city_name:
             city, _ = City.objects.get_or_create(name_city=city_name)
             citizen.id_city = city
@@ -233,12 +250,10 @@ def update_profile(request):
             street, _ = Street.objects.get_or_create(name_street=street_name)
             citizen.id_street = street
 
-        # Сохраняем изменения
         citizen.save()
         messages.success(request, 'Профиль успешно обновлён.')
         return redirect('profile')
 
-    # Отображаем форму с текущими данными
     return render(request, 'auth/update_profile.html')
 
 
@@ -390,13 +405,24 @@ def is_admin(user):
 def admin_categories(request):
     search_query = request.GET.get('search', '')  # Получаем поисковый запрос из GET-параметра
 
-    # Фильтрация категорий по поисковому запросу
-    if search_query:
+    # Если запрос AJAX, отправляем JSON-ответ с результатами поиска
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         categories = Category.objects.filter(
             Q(name_official__icontains=search_query) | Q(name_short__icontains=search_query)
-        )
-    else:
-        categories = Category.objects.all()
+        ) if search_query else Category.objects.all()
+
+        data = [
+            {
+                'id': category.id,
+                'name_official': category.name_official,
+                'name_short': category.name_short
+            }
+            for category in categories
+        ]
+        return JsonResponse({'categories': data})
+
+    # Если обычный запрос, отдаем страницу с категориями
+    categories = Category.objects.all()
 
     if request.method == 'POST':
         # Добавление категории
@@ -442,21 +468,18 @@ def admin_categories(request):
 
                         messages.success(request, 'Категории успешно загружены из XML.')
 
-                    elif file_name.endswith(('.xlsx', '.xls')):
-                        # Обработка Excel-файла
+                    elif file_name.endswith(('.xlsx', '.xls')):  # Обработка Excel-файла
                         df = pd.read_excel(uploaded_file)
 
-                        # Проверяем, что в файле есть необходимая колонка
                         if 'name_official' not in df.columns:
                             messages.error(request, 'В файле отсутствует колонка "name_official".')
                             return redirect('admin_categories')
 
-                        # Обрабатываем каждую строку в файле
                         for index, row in df.iterrows():
                             name_official = row['name_official']
-                            name_short = row.get('name_short', None)  # Колонка name_short может отсутствовать
+                            name_short = row.get('name_short', None)
 
-                            if pd.notna(name_official):  # Проверяем, что name_official не пустой
+                            if pd.notna(name_official):
                                 Category.objects.create(
                                     name_official=name_official,
                                     name_short=name_short
@@ -488,6 +511,8 @@ def admin_categories(request):
                 messages.error(request, 'Не выбрано ни одной категории для удаления.')
 
     return render(request, 'admin/categories.html', {'categories': categories, 'search_query': search_query})
+
+
 
 # Администратор:: Изменение данных категорий
 @login_required

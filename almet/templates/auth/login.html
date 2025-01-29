@@ -6,16 +6,17 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
         <h2 class="text-center">Авторизация</h2>
-        <form method="post" class="mt-4">
+        <form method="post" class="mt-4" onsubmit="return validateLoginInput()">
             {% csrf_token %}
             <div class="mb-3">
                 <label for="login_input" class="form-label">Email или телефон</label>
-                <input type="text" class="form-control" id="login_input" name="login_input" required>
+                <input title="Чтобы ввести телефон начинайте с +7" type="text" class="form-control" id="login_input" name="login_input" required placeholder="Введите ваш телефон или почту">
+                <div class="invalid-feedback">Введите корректный email или телефон.</div>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Пароль</label>
                 <div class="input-group">
-                    <input type="password" class="form-control" id="password" name="password" required>
+                    <input type="password" class="form-control" id="password" name="password" required placeholder="Введите ваш пароль">
                     <button type="button" class="btn btn-outline-secondary" id="togglePassword" onclick="togglePasswordVisibility('password', 'togglePassword')">👁️‍🗨️</button>
                 </div>
             </div>
@@ -23,6 +24,9 @@
         </form>
     </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 
 <script>
     function togglePasswordVisibility(inputId, buttonId) {
@@ -34,6 +38,35 @@
         } else {
             input.type = "password";
             button.innerHTML = "👁️‍🗨️";
+        }
+    }
+
+    $(document).ready(function() {
+        $('#login_input').on('input', function() {
+            let inputVal = $(this).val();
+
+            if (inputVal.startsWith("+7")) {
+                // Применяем маску для телефона
+                $(this).mask('+7 (000) 000-00-00');
+            } else {
+                // Убираем маску, если это не телефон
+                $(this).unmask();
+            }
+        });
+    });
+
+    function validateLoginInput() {
+        let input = document.getElementById('login_input');
+        let value = input.value.trim();
+        let emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        let phonePattern = /^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/;
+
+        if (emailPattern.test(value) || phonePattern.test(value)) {
+            input.classList.remove("is-invalid");
+            return true;
+        } else {
+            input.classList.add("is-invalid");
+            return false;
         }
     }
 </script>

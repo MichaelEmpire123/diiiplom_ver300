@@ -49,4 +49,22 @@
         </form>
     </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        function validateCyrillic(input) {
+            input.value = input.value.replace(/[^А-Яа-яЁё\s-]/g, '');
+        }
+
+        document.getElementById("surname").addEventListener("input", function() { validateCyrillic(this); });
+        document.getElementById("name").addEventListener("input", function() { validateCyrillic(this); });
+        document.getElementById("patronymic").addEventListener("input", function() { validateCyrillic(this); });
+    });
+
+    $(document).ready(function(){
+        $('#tel').mask('+7 (000) 000-00-00');
+    });
+</script>
 {% endblock %}
