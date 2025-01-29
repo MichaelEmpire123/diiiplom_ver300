@@ -11,16 +11,6 @@
 
             {{ form.as_p }}
 
-            <!-- Поле для загрузки изображений с предпросмотром и перетаскиванием -->
-            <div class="mb-3">
-                <label for="id_photos" class="form-label">Фото обращения (можно выбрать несколько)</label>
-                <div id="drop-area" class="form-control" style="height: 150px; border: 2px dashed #007bff; position: relative;">
-                    <input type="file" name="photos" class="form-control" id="id_photos" multiple style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0;" onchange="previewImages(event)">
-                    <div id="file-list" style="padding-top: 20px;"></div>
-                    <p id="drop-text" style="text-align: center; margin-top: 20px; color: #007bff;">Перетащите файлы сюда или выберите их вручную.</p>
-                </div>
-            </div>
-
             <button type="submit" class="btn btn-primary">Отправить</button>
         </form>
     </div>

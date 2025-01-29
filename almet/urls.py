@@ -14,6 +14,8 @@ urlpatterns = [
     # обращения
     path('create_appeal/', views.create_appeal, name='create_appeal'),
     path('view_appeals/', views.view_appeals, name='view_appeals'),
+    path('view_appeals/detail/<int:appeal_id>/', views.appeal_detail, name='appeal_detail'),
+
     # чат
     path('chat/<int:appeal_id>/', views.chat, name='chat'),
 

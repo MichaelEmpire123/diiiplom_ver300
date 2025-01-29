@@ -281,6 +281,14 @@ def view_appeals(request):
 
     return render(request, 'appeals/view_appeals.html', {'appeals': appeals})
 
+@login_required
+def appeal_detail(request, appeal_id):
+    appeal = get_object_or_404(Appeals, id=appeal_id, id_sitizen=request.user.id_citizen)
+    statuses = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status')
+
+    return render(request, 'appeals/appeal_detail.html', {'appeal': appeal, 'statuses': statuses})
+
+
 
 @login_required
 def chat(request, appeal_id):
