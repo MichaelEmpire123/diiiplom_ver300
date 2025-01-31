@@ -761,10 +761,42 @@ def admin_create_employee(request):
 @user_passes_test(is_admin)
 def admin_all_appeals(request):
     appeals = Appeals.objects.all()
-    services = Service.objects.all()  # Получаем все городские службы
+    services = Service.objects.all()
+    statuses = Status.objects.all()
+
+    # Подзапрос для получения последнего статуса
+    latest_status_subquery = Processing_appeals.objects.filter(
+        id_appeal=OuterRef('pk')
+    ).order_by('-date_time_setting_status').values('id_status')[:1]
+
+    # Аннотируем обращения последним статусом
+    appeals = appeals.annotate(
+        latest_status=Subquery(latest_status_subquery)
+    )
+
+    # Фильтрация по дате
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    if start_date and end_date:
+        appeals = appeals.filter(date_time__range=[start_date, end_date])
+
+    # Фильтрация по статусу
+    status_id = request.GET.get('status')
+    if status_id:
+        appeals = appeals.filter(latest_status=status_id)
+
+    # Фильтрация по службе
+    service_id = request.GET.get('service')
+    if service_id:
+        appeals = appeals.filter(id_service=service_id)
+
+    # Убираем дубликаты (на всякий случай)
+    appeals = appeals.distinct()
+
     return render(request, 'admin/all_appeals.html', {
         'appeals': appeals,
-        'services': services,  # Передаем службы в шаблон
+        'services': services,
+        'statuses': statuses,
     })
 
 @login_required
@@ -783,6 +815,42 @@ def assign_service(request, appeal_id):
             appeal.save()
             messages.success(request, f'Обращение {appeal.id} больше не назначено на службу.')
     return redirect('admin_all_appeals')
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_view_appeal(request, appeal_id):
+    appeal = get_object_or_404(Appeals, id=appeal_id)
+    statuses = Status.objects.all()
+    services = Service.objects.all()
+
+    if request.method == 'POST':
+        if 'status' in request.POST:
+            status_id = request.POST.get('status')
+            status = get_object_or_404(Status, id=status_id)
+            Processing_appeals.objects.create(id_appeal=appeal, id_status=status)
+            messages.success(request, f'Статус обращения {appeal.id} обновлён.')
+
+        elif 'service' in request.POST:
+            service_id = request.POST.get('service')
+            if service_id:
+                service = get_object_or_404(Service, id=service_id)
+                appeal.id_service = service
+            else:
+                appeal.id_service = None
+            appeal.save()
+            messages.success(request, f'Обращение {appeal.id} обновлено.')
+
+        elif 'delete' in request.POST:
+            appeal.delete()
+            messages.success(request, 'Обращение удалено.')
+            return redirect('admin_all_appeals')
+
+    return render(request, 'admin/view_appeal.html', {
+        'appeal': appeal,
+        'statuses': statuses,
+        'services': services,
+    })
 
 
 

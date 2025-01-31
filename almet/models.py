@@ -104,6 +104,8 @@ class Processing_appeals(models.Model):
     def __str__(self):
         return f"Обработка {self.id} для обращения {self.id_appeal}"
 
+
+
 class Message(models.Model):
     id_appeals = models.ForeignKey(Appeals, on_delete=models.CASCADE)
     id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.CASCADE, blank=True, null=True)

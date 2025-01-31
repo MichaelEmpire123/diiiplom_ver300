@@ -38,6 +38,8 @@ urlpatterns = [
     path('administrator/delete_service/<int:service_id>/', views.admin_delete_service, name='admin_delete_service'),
     path('administrator/create_employee/', views.admin_create_employee, name='admin_create_employee'),
     path('administrator/all_appeals/', views.admin_all_appeals, name='admin_all_appeals'),
+    path('administrator/all_appeals/<int:appeal_id>/', views.admin_view_appeal, name='admin_view_appeal'),
+
     path('administrator/assign_service/<int:appeal_id>/', views.assign_service, name='assign_service')
 ]
 

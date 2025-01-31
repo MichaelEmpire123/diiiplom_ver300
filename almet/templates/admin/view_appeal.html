@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Просмотр обращения{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Обращение №{{ appeal.id }}</h2>
+    <p><strong>Гражданин:</strong> {{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</p>
+    <p><strong>Описание:</strong> {{ appeal.description_problem }}</p>
+    <p><strong>Текущий статус:</strong> {{ appeal.processing_appeals_set.last.id_status.name_status }}</p>
+    <p><strong>Назначенная служба:</strong> {{ appeal.id_service.name|default:"Не назначено" }}</p>
+
+    <h4>Изменить статус</h4>
+    <form method="post">
+        {% csrf_token %}
+        <select name="status" class="form-select">
+            {% for status in statuses %}
+                <option value="{{ status.id }}" {% if status.id == appeal.processing_appeals_set.last.id_status.id %}selected{% endif %}>
+                    {{ status.name_status }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit" name="change_status" class="btn btn-primary mt-2">Обновить</button>
+    </form>
+
+
+    <h4>Назначить службу</h4>
+    <form method="post">
+        {% csrf_token %}
+        <select name="service" class="form-select">
+            <option value="">Не назначено</option>
+            {% for service in services %}
+                <option value="{{ service.id }}" {% if appeal.id_service == service %}selected{% endif %}>
+                    {{ service.name }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit" name="assign_service" class="btn btn-primary mt-2">Обновить</button>
+    </form>
+
+    <h4>Удалить обращение</h4>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="delete" class="btn btn-danger">Удалить</button>
+    </form>
+
+    <a href="{% url 'admin_all_appeals' %}" class="btn btn-secondary mt-3">Назад</a>
+</div>
+{% endblock %}

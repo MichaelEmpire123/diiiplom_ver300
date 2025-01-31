@@ -5,6 +5,49 @@
 {% block content %}
 <div class="container">
     <h2>Все обращения</h2>
+
+    <!-- Форма фильтрации -->
+    <form method="get" action="{% url 'admin_all_appeals' %}" class="mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="start_date">Дата с:</label>
+                <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label for="end_date">Дата по:</label>
+                <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request.GET.end_date }}">
+            </div>
+            <div class="col-md-3">
+                <label for="status">Статус:</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="">Все статусы</option>
+                    {% for status in statuses %}
+                        <option value="{{ status.id }}" {% if request.GET.status == status.id|stringformat:"s" %}selected{% endif %}>
+                            {{ status.name_status }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="service">Служба:</label>
+                <select id="service" name="service" class="form-select">
+                    <option value="">Все службы</option>
+                    {% for service in services %}
+                        <option value="{{ service.id }}" {% if request.GET.service == service.id|stringformat:"s" %}selected{% endif %}>
+                            {{ service.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary">Фильтровать</button>
+                <a href="{% url 'admin_all_appeals' %}" class="btn btn-secondary">Сбросить</a>
+            </div>
+        </div>
+    </form>
+
     <table class="table">
         <thead>
             <tr>
@@ -12,7 +55,7 @@
                 <th>Гражданин</th>
                 <th>Описание</th>
                 <th>Статус</th>
-                <th>Назначить службу</th> <!-- Новая колонка -->
+                <th>Действия</th>
             </tr>
         </thead>
         <tbody>
@@ -23,18 +66,7 @@
                 <td>{{ appeal.description_problem }}</td>
                 <td>{{ appeal.processing_appeals_set.last.id_status.name_status }}</td>
                 <td>
-                    <form method="post" action="{% url 'assign_service' appeal.id %}">
-                        {% csrf_token %}
-                        <select name="service" class="form-select">
-                            <option value="">Не назначено</option>
-                            {% for service in services %}
-                                <option value="{{ service.id }}" {% if appeal.id_service == service %}selected{% endif %}>
-                                    {{ service.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-primary btn-sm mt-2">Назначить</button>
-                    </form>
+                    <a href="{% url 'admin_view_appeal' appeal.id %}" class="btn btn-info btn-sm">Просмотреть</a>
                 </td>
             </tr>
             {% endfor %}
