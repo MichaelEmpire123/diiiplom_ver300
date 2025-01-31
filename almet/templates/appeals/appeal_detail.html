@@ -3,59 +3,76 @@
 {% block title %}Детали обращения{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <h2 class="text-center">Детали обращения #{{ appeal.id }}</h2>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="card-title text-center mb-0">Детали обращения #{{ appeal.id }}</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Основная информация -->
+                    <div class="mb-4">
+                        <p><strong>Категория:</strong> {{ appeal.id_category.name_official }}</p>
+                        <p><strong>Описание:</strong> {{ appeal.description_problem }}</p>
+                        <p><strong>Дата создания:</strong> {{ appeal.date_time }}</p>
+                        <p><strong>Текущий статус:</strong> <span class="badge bg-info">{{ appeal.processing_appeals_set.last.id_status.name_status }}</span></p>
+                        <p><strong>Назначенная служба:</strong> <span class="badge bg-secondary">{{ appeal.id_service.name|default:"Не назначено" }}</span></p>
+                    </div>
 
-        <p><strong>Категория:</strong> {{ appeal.id_category.name_official }}</p>
-        <p><strong>Описание:</strong> {{ appeal.description_problem }}</p>
-        <p><strong>Дата создания:</strong> {{ appeal.date_time }}</p>
-        <p><strong>Текущий статус:</strong> {{ latest_status }}</p>
+                    <!-- Фото обращения -->
+                    {% if appeal.photo %}
+                        <div class="text-center mb-4">
+                            <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 40%; height: auto;">
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">Фото отсутствует</p>
+                    {% endif %}
 
-        <!-- Отображение фото, если оно есть -->
-        {% if appeal.photo %}
-            <div class="text-center">
-                <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+                    <!-- История статусов -->
+                    <h4 class="mt-4 mb-3">История статусов</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Статус</th>
+                                    <th>Дата изменения</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for status in statuses %}
+                                <tr>
+                                    <td>{{ status.id_status.name_status }}</td>
+                                    <td>{{ status.date_time_setting_status }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted py-3">Нет информации о статусах</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Кнопки редактирования и удаления, если статус "Принято" -->
+                    {% if latest_status == "Принято" %}
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'edit_appeal' appeal.id %}" class="btn btn-warning">Редактировать</a>
+
+                            <form method="post" action="{% url 'delete_appeal' appeal.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger" onclick="return confirm('Вы уверены, что хотите удалить это обращение?')">Удалить</button>
+                            </form>
+                        </div>
+                    {% endif %}
+
+                    <!-- Кнопка "Назад" -->
+                    <div class="text-center mt-4">
+                        <a href="{% url 'view_appeals' %}" class="btn btn-secondary">Назад</a>
+                    </div>
+                </div>
             </div>
-        {% else %}
-            <p class="text-muted">Фото отсутствует</p>
-        {% endif %}
-
-        <h4 class="mt-4">История статусов</h4>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Статус</th>
-                    <th>Дата изменения</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for status in statuses %}
-                <tr>
-                    <td>{{ status.id_status.name_status }}</td>
-                    <td>{{ status.date_time_setting_status }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="2" class="text-center">Нет информации о статусах</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <!-- Кнопки редактирования и удаления, если статус "Принято" -->
-        {% if latest_status == "Принято" %}
-            <div class="d-flex justify-content-between mt-3">
-                <a href="{% url 'edit_appeal' appeal.id %}" class="btn btn-warning">Редактировать</a>
-
-                <form method="post" action="{% url 'delete_appeal' appeal.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Вы уверены, что хотите удалить это обращение?')">Удалить</button>
-                </form>
-            </div>
-        {% endif %}
-
-        <a href="{% url 'view_appeals' %}" class="btn btn-secondary mt-3">Назад</a>
+        </div>
     </div>
 </div>
 {% endblock %}

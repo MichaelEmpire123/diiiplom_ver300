@@ -3,74 +3,90 @@
 {% block title %}Все обращения{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Все обращения</h2>
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">Все обращения</h2>
+        </div>
+        <div class="card-body">
+            <!-- Форма фильтрации -->
+            <form method="get" action="{% url 'admin_all_appeals' %}" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Дата с:</label>
+                        <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">Дата по:</label>
+                        <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request.GET.end_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Статус:</label>
+                        <select id="status" name="status" class="form-select">
+                            <option value="">Все статусы</option>
+                            {% for status in statuses %}
+                                <option value="{{ status.id }}" {% if request.GET.status == status.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ status.name_status }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="service" class="form-label">Служба:</label>
+                        <select id="service" name="service" class="form-select">
+                            <option value="">Все службы</option>
+                            {% for service in services %}
+                                <option value="{{ service.id }}" {% if request.GET.service == service.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ service.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Фильтровать</button>
+                        <a href="{% url 'admin_all_appeals' %}" class="btn btn-secondary">Сбросить</a>
+                    </div>
+                </div>
+            </form>
 
-    <!-- Форма фильтрации -->
-    <form method="get" action="{% url 'admin_all_appeals' %}" class="mb-4">
-        <div class="row">
-            <div class="col-md-3">
-                <label for="start_date">Дата с:</label>
-                <input type="date" id="start_date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
-            </div>
-            <div class="col-md-3">
-                <label for="end_date">Дата по:</label>
-                <input type="date" id="end_date" name="end_date" class="form-control" value="{{ request.GET.end_date }}">
-            </div>
-            <div class="col-md-3">
-                <label for="status">Статус:</label>
-                <select id="status" name="status" class="form-select">
-                    <option value="">Все статусы</option>
-                    {% for status in statuses %}
-                        <option value="{{ status.id }}" {% if request.GET.status == status.id|stringformat:"s" %}selected{% endif %}>
-                            {{ status.name_status }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="service">Служба:</label>
-                <select id="service" name="service" class="form-select">
-                    <option value="">Все службы</option>
-                    {% for service in services %}
-                        <option value="{{ service.id }}" {% if request.GET.service == service.id|stringformat:"s" %}selected{% endif %}>
-                            {{ service.name }}
-                        </option>
-                    {% endfor %}
-                </select>
+            <!-- Таблица обращений -->
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Гражданин</th>
+                            <th scope="col">Описание</th>
+                            <th scope="col">Статус</th>
+                            <th scope="col">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appeal in appeals %}
+                        <tr>
+                            <td>{{ appeal.id }}</td>
+                            <td>{{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</td>
+                            <td>{{ appeal.description_problem }}</td>
+                            <td>
+                                <span class="badge bg-{% if appeal.processing_appeals_set.last.id_status.name_status == 'Решено' %}success{% elif appeal.processing_appeals_set.last.id_status.name_status == 'В обработке' %}warning{% else %}secondary{% endif %}">
+                                    {{ appeal.processing_appeals_set.last.id_status.name_status }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'admin_view_appeal' appeal.id %}" class="btn btn-primary btn-sm">Просмотреть</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">Обращения не найдены</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-        <div class="row mt-3">
-            <div class="col-md-12">
-                <button type="submit" class="btn btn-primary">Фильтровать</button>
-                <a href="{% url 'admin_all_appeals' %}" class="btn btn-secondary">Сбросить</a>
-            </div>
-        </div>
-    </form>
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Гражданин</th>
-                <th>Описание</th>
-                <th>Статус</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for appeal in appeals %}
-            <tr>
-                <td>{{ appeal.id }}</td>
-                <td>{{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</td>
-                <td>{{ appeal.description_problem }}</td>
-                <td>{{ appeal.processing_appeals_set.last.id_status.name_status }}</td>
-                <td>
-                    <a href="{% url 'admin_view_appeal' appeal.id %}" class="btn btn-primary btn-sm">Просмотреть</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    </div>
 </div>
 {% endblock %}

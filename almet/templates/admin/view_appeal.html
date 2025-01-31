@@ -3,55 +3,77 @@
 {% block title %}Просмотр обращения{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Обращение №{{ appeal.id }}</h2>
-    <p><strong>Гражданин:</strong> {{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</p>
-    <p><strong>Категория:</strong> {{ appeal.id_category }}</p>
-    <p><strong>Описание:</strong> {{ appeal.description_problem }}</p>
-    <p><strong>Текущий статус:</strong> {{ appeal.processing_appeals_set.last.id_status.name_status }}</p>
-    <p><strong>Назначенная служба:</strong> {{ appeal.id_service.name|default:"Не назначено" }}</p>
-        {% if appeal.photo %}
-            <div class="text-center">
-                <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title">Обращение №{{ appeal.id }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <p><strong>Гражданин:</strong> {{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</p>
+                <p><strong>Категория:</strong> {{ appeal.id_category }}</p>
+                <p><strong>Описание:</strong> {{ appeal.description_problem }}</p>
+                <p><strong>Текущий статус:</strong> <span class="badge bg-info">{{ appeal.processing_appeals_set.last.id_status.name_status }}</span></p>
+                <p><strong>Назначенная служба:</strong> <span class="badge bg-secondary">{{ appeal.id_service.name|default:"Не назначено" }}</span></p>
             </div>
-        {% else %}
-            <p class="text-muted">Фото отсутствует</p>
-        {% endif %}
 
-    <h4>Изменить статус</h4>
-    <form method="post">
-        {% csrf_token %}
-        <select name="status" class="form-select">
-            {% for status in statuses %}
-                <option value="{{ status.id }}" {% if status.id == appeal.processing_appeals_set.last.id_status.id %}selected{% endif %}>
-                    {{ status.name_status }}
-                </option>
-            {% endfor %}
-        </select>
-        <button type="submit" name="change_status" class="btn btn-primary mt-2">Обновить</button>
-    </form>
+            {% if appeal.photo %}
+                <div class="text-center mb-4">
+                    <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 40%; height: auto;">
+                </div>
+            {% else %}
+                <p class="text-muted">Фото отсутствует</p>
+            {% endif %}
 
+            <hr>
 
-    <h4>Назначить службу</h4>
-    <form method="post">
-        {% csrf_token %}
-        <select name="service" class="form-select">
-            <option value="">Не назначено</option>
-            {% for service in services %}
-                <option value="{{ service.id }}" {% if appeal.id_service == service %}selected{% endif %}>
-                    {{ service.name }}
-                </option>
-            {% endfor %}
-        </select>
-        <button type="submit" name="assign_service" class="btn btn-primary mt-2">Обновить</button>
-    </form>
+            <div class="mb-4">
+                <h4>Изменить статус</h4>
+                <form method="post" class="mb-3">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <select name="status" class="form-select">
+                            {% for status in statuses %}
+                                <option value="{{ status.id }}" {% if status.id == appeal.processing_appeals_set.last.id_status.id %}selected{% endif %}>
+                                    {{ status.name_status }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" name="change_status" class="btn btn-primary">Обновить</button>
+                    </div>
+                </form>
+            </div>
 
-    <h4>Удалить обращение</h4>
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit" name="delete" class="btn btn-danger">Удалить</button>
-    </form>
+            <div class="mb-4">
+                <h4>Назначить службу</h4>
+                <form method="post" class="mb-3">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <select name="service" class="form-select">
+                            <option value="">Не назначено</option>
+                            {% for service in services %}
+                                <option value="{{ service.id }}" {% if appeal.id_service == service %}selected{% endif %}>
+                                    {{ service.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" name="assign_service" class="btn btn-primary">Обновить</button>
+                    </div>
+                </form>
+            </div>
 
-    <a href="{% url 'admin_all_appeals' %}" class="btn btn-secondary mt-3">Назад</a>
+            <div class="mb-4">
+                <h4>Удалить обращение</h4>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="delete" class="btn btn-danger">Удалить</button>
+                </form>
+            </div>
+
+            <div class="mt-4">
+                <a href="{% url 'admin_all_appeals' %}" class="btn btn-secondary">Назад</a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
