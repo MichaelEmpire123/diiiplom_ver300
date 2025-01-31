@@ -16,7 +16,7 @@ from .models import User, Citizen, Street, City, Status, Appeals, Message, Proce
     Service
 from django.db.models import OuterRef, Subquery, Q
 import xml.etree.ElementTree as ET
-
+from django.utils.timezone import now
 
 
 def index(request):
@@ -828,7 +828,11 @@ def admin_view_appeal(request, appeal_id):
         if 'status' in request.POST:
             status_id = request.POST.get('status')
             status = get_object_or_404(Status, id=status_id)
-            Processing_appeals.objects.create(id_appeal=appeal, id_status=status)
+            Processing_appeals.objects.create(
+                id_appeal=appeal,
+                id_status=status,
+                date_time_setting_status=now()  # Добавляем текущее время
+            )
             messages.success(request, f'Статус обращения {appeal.id} обновлён.')
 
         elif 'service' in request.POST:
@@ -851,7 +855,6 @@ def admin_view_appeal(request, appeal_id):
         'statuses': statuses,
         'services': services,
     })
-
 
 
 
