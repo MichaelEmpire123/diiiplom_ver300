@@ -3,16 +3,16 @@
 {% block title %}Управление пользователями{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Управление пользователями</h2>
+<div class="container mt-4">
+    <h2 class="mb-4">Управление пользователями</h2>
 
     <!-- Форма для фильтрации и поиска -->
     <form method="get" class="mb-4">
-        <div class="row g-3">
+        <div class="row g-3 align-items-end">
             <!-- Фильтр по роли -->
             <div class="col-md-3">
                 <label for="role" class="form-label">Роль</label>
-                <select name="role" id="role" class="form-select">
+                <select name="role" id="role" class="form-select shadow-sm">
                     <option value="">Все</option>
                     <option value="citizen" {% if role_filter == 'citizen' %}selected{% endif %}>Жители</option>
                     <option value="employee" {% if role_filter == 'employee' %}selected{% endif %}>Сотрудники</option>
@@ -22,7 +22,7 @@
             <!-- Фильтр по службе -->
             <div class="col-md-3">
                 <label for="service" class="form-label">Служба</label>
-                <select name="service" id="service" class="form-select">
+                <select name="service" id="service" class="form-select shadow-sm">
                     <option value="">Все</option>
                     {% for service in services %}
                         <option value="{{ service.id }}" {% if service_filter == service.id|stringformat:"s" %}selected{% endif %}>
@@ -35,65 +35,75 @@
             <!-- Поиск по ФИО -->
             <div class="col-md-4">
                 <label for="search" class="form-label">Поиск по ФИО</label>
-                <input type="text" name="search" id="search" class="form-control" value="{{ search_query|default:'' }}" placeholder="Введите ФИО">
+                <div class="input-group shadow-sm">
+                    <input type="text" name="search" id="search" class="form-control" value="{{ search_query|default:'' }}" placeholder="Введите ФИО">
+                    {% if search_query %}
+                        <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary">×</a>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Кнопка "Применить" -->
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Применить</button>
             </div>
         </div>
     </form>
 
     <!-- Таблица пользователей -->
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Email</th>
-                <th>ФИО</th>
-                <th>Роль</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.email }}</td>
-                <td>
-                    {% if user.id_citizen %}
-                        <!-- ФИО для жителя -->
-                        {{ user.id_citizen.surname }} {{ user.id_citizen.name }} {{ user.id_citizen.patronymic|default:"" }}
-                    {% elif user.id_sotrudnik %}
-                        <!-- ФИО для сотрудника -->
-                        {{ user.id_sotrudnik.surname }} {{ user.id_sotrudnik.name }} {{ user.id_sotrudnik.patronymic|default:"" }}
-                    {% else %}
-                        <!-- Если ФИО отсутствует -->
-                        Не указано
-                    {% endif %}
-                </td>
-                <td>
-                    {% if user.is_superuser %}
-                        Администратор системы
-                    {% elif user.is_staff %}
-                        Администратор
-                    {% elif user.id_sotrudnik %}
-                        Сотрудник
-                    {% else %}
-                        Житель
-                    {% endif %}
-                </td>
-                <td style="display: flex; gap: 10px;">
-                    <a href="{% url 'change_role' user.id %}" class="btn btn-warning btn-sm">Изменить роль</a>
-                    <form method="post" action="{% url 'delete_user' user.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Вы уверены, что хотите удалить этого пользователя?')">Удалить</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark text-center">
+                <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>ФИО</th>
+                    <th>Роль</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td class="align-middle">{{ user.id }}</td>
+                    <td class="align-middle">{{ user.email }}</td>
+                    <td class="align-middle">
+                        {% if user.id_citizen %}
+                            {{ user.id_citizen.surname }} {{ user.id_citizen.name }} {{ user.id_citizen.patronymic|default:"" }}
+                        {% elif user.id_sotrudnik %}
+                            {{ user.id_sotrudnik.surname }} {{ user.id_sotrudnik.name }} {{ user.id_sotrudnik.patronymic|default:"" }}
+                        {% else %}
+                            Не указано
+                        {% endif %}
+                    </td>
+                    <td class="align-middle">
+                        {% if user.is_superuser %}
+                            <span class="badge bg-danger">Администратор системы</span>
+                        {% elif user.is_staff %}
+                            <span class="badge bg-warning text-dark">Администратор</span>
+                        {% elif user.id_sotrudnik %}
+                            <span class="badge bg-info text-dark">Сотрудник</span>
+                        {% else %}
+                            <span class="badge bg-success">Житель</span>
+                        {% endif %}
+                    </td>
+                    <td class="align-middle">
+                        <div class="btn-group">
+                            <a href="{% url 'change_role' user.id %}" class="btn btn-warning btn-sm">Изменить роль</a>
+                            <form method="post" action="{% url 'delete_user' user.id %}" onsubmit="return confirm('Вы уверены, что хотите удалить этого пользователя?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Пользователи не найдены</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

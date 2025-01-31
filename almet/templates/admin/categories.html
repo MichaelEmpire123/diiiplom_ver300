@@ -3,92 +3,114 @@
 {% block title %}Управление категориями{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Управление категориями</h2>
+<div class="container mt-4">
+    <h2 class="mb-4">Управление категориями</h2>
 
     <!-- Форма для добавления категории -->
-    <div class="mb-4">
-        <h4>Добавить категорию</h4>
-        <form method="post" action="{% url 'admin_categories' %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="name_official">Официальное название:</label>
-                <input type="text" name="name_official" class="form-control" required>
-            </div>
-            <div class="form-group">
-                <label for="name_short">Краткое название:</label>
-                <input type="text" name="name_short" class="form-control">
-            </div>
-            <br>
-            <button type="submit" name="add_category" class="btn btn-primary">Добавить</button>
-        </form>
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Добавить категорию</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'admin_categories' %}">
+                {% csrf_token %}
+                <div class="form-group mb-3">
+                    <label for="name_official" class="form-label">Официальное название:</label>
+                    <input type="text" name="name_official" class="form-control" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="name_short" class="form-label">Краткое название:</label>
+                    <input type="text" name="name_short" class="form-control">
+                </div>
+                <button type="submit" name="add_category" class="btn btn-success">Добавить</button>
+            </form>
+        </div>
     </div>
 
     <!-- Форма для загрузки XML или Excel -->
-    <div class="mb-4">
-        <h4>Загрузить категории из XML или Excel</h4>
-        <form method="post" action="{% url 'admin_categories' %}" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="file">Файл (XML или Excel):</label>
-                <input type="file" name="file" class="form-control-file" accept=".xml, .xlsx, .xls" required>
-            </div>
-            <br>
-            <button type="submit" name="upload_file" class="btn btn-primary">Загрузить</button>
-        </form>
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Загрузить категории из XML или Excel</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'admin_categories' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group mb-3">
+                    <label for="file" class="form-label">Файл (XML или Excel):</label>
+                    <input type="file" name="file" class="form-control" accept=".xml, .xlsx, .xls" required>
+                </div>
+                <button type="submit" name="upload_file" class="btn btn-info">Загрузить</button>
+            </form>
+        </div>
     </div>
 
     <!-- Форма для поиска -->
-    <div class="mb-4">
-        <h4>Поиск категорий</h4>
-        <form method="get" action="{% url 'admin_categories' %}">
-            <div class="input-group">
-                <input type="text" name="search" class="form-control" placeholder="Введите название категории" value="{{ search_query|default:'' }}">
-            </div>
-        </form>
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h4 class="mb-0">Поиск категорий</h4>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'admin_categories' %}">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Введите название категории" value="{{ search_query|default:'' }}">
+                    <button type="submit" class="btn btn-outline-secondary">Найти</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Форма для массового удаления -->
-    <form method="post" action="{% url 'admin_categories' %}" id="mass-delete-form">
-        {% csrf_token %}
-        <button type="submit" name="mass_delete" class="btn btn-danger mb-3">Удалить выбранные</button>
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">Управление категориями</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'admin_categories' %}" id="mass-delete-form">
+                {% csrf_token %}
+                <button type="submit" name="mass_delete" class="btn btn-danger mb-3">Удалить выбранные</button>
 
-        <!-- Таблица категорий -->
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Выбрать</th>
-                    <th>ID</th>
-                    <th>Официальное название</th>
-                    <th>Краткое название</th>
-                    <th>Действия</th>
-                </tr>
-            </thead>
-            <tbody id="category-table-body">
-                {% if categories %}
-                    {% for category in categories %}
-                    <tr>
-                        <td><input type="checkbox" name="selected_categories" value="{{ category.id }}"></td>
-                        <td>{{ category.id }}</td>
-                        <td>{{ category.name_official }}</td>
-                        <td>{{ category.name_short }}</td>
-                        <td style="display: flex; gap: 10px;">
-                            <a href="{% url 'edit_category' category.id %}" class="btn btn-sm btn-warning">Изменить</a>
-                            <form method="post" action="{% url 'delete_category' category.id %}" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены?')">Удалить</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center">Категории не найдены.</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </form>
+                <!-- Таблица категорий -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select-all"></th>
+                                <th>ID</th>
+                                <th>Официальное название</th>
+                                <th>Краткое название</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="category-table-body">
+                            {% if categories %}
+                                {% for category in categories %}
+                                <tr>
+                                    <td><input type="checkbox" name="selected_categories" value="{{ category.id }}"></td>
+                                    <td>{{ category.id }}</td>
+                                    <td>{{ category.name_official }}</td>
+                                    <td>{{ category.name_short }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'edit_category' category.id %}" class="btn btn-sm btn-warning">Изменить</a>
+                                            <form method="post" action="{% url 'delete_category' category.id %}" onsubmit="return confirm('Вы уверены?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">Категории не найдены.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Скрипт для обработки поиска без перезагрузки страницы -->
@@ -103,7 +125,15 @@
         }
     });
 
+    // Выделить все/снять выделение
+    document.getElementById('select-all').addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('input[name="selected_categories"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
 
+    // Поиск без перезагрузки страницы
     document.addEventListener("DOMContentLoaded", function() {
         const searchInput = document.querySelector('input[name="search"]');
         const tableBody = document.querySelector("#category-table-body");
@@ -128,11 +158,12 @@
                                 <td>${category.name_official}</td>
                                 <td>${category.name_short || ''}</td>
                                 <td>
-                                    <a href="/admin/categories/edit/${category.id}/" class="btn btn-sm btn-warning">Изменить</a>
-                                    <form method="post" action="/admin/categories/delete/${category.id}/" style="display:inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены?')">Удалить</button>
-                                    </form>
+                                    <div class="d-flex gap-2">
+                                        <a href="/admin/categories/edit/${category.id}/" class="btn btn-sm btn-warning">Изменить</a>
+                                        <form method="post" action="/admin/categories/delete/${category.id}/" onsubmit="return confirm('Вы уверены?');">
+                                            <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         `;
@@ -146,6 +177,3 @@
     });
 </script>
 {% endblock %}
-
-
-
