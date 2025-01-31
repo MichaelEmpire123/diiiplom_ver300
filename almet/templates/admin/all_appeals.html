@@ -66,7 +66,7 @@
                 <td>{{ appeal.description_problem }}</td>
                 <td>{{ appeal.processing_appeals_set.last.id_status.name_status }}</td>
                 <td>
-                    <a href="{% url 'admin_view_appeal' appeal.id %}" class="btn btn-info btn-sm">Просмотреть</a>
+                    <a href="{% url 'admin_view_appeal' appeal.id %}" class="btn btn-primary btn-sm">Просмотреть</a>
                 </td>
             </tr>
             {% endfor %}

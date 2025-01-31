@@ -6,9 +6,17 @@
 <div class="container">
     <h2>Обращение №{{ appeal.id }}</h2>
     <p><strong>Гражданин:</strong> {{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</p>
+    <p><strong>Категория:</strong> {{ appeal.id_category }}</p>
     <p><strong>Описание:</strong> {{ appeal.description_problem }}</p>
     <p><strong>Текущий статус:</strong> {{ appeal.processing_appeals_set.last.id_status.name_status }}</p>
     <p><strong>Назначенная служба:</strong> {{ appeal.id_service.name|default:"Не назначено" }}</p>
+        {% if appeal.photo %}
+            <div class="text-center">
+                <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 100%; height: auto;">
+            </div>
+        {% else %}
+            <p class="text-muted">Фото отсутствует</p>
+        {% endif %}
 
     <h4>Изменить статус</h4>
     <form method="post">
