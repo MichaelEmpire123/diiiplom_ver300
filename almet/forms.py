@@ -1,5 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+
 from .models import Appeals, Message, Service
 
 
@@ -139,12 +141,23 @@ class AssignServiceForm(forms.Form):
 
 
 
-
+class ReportForm(forms.Form):
+    start_date = forms.DateField(
+        label="Начальная дата",
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        initial=timezone.now().replace(day=1)  # По умолчанию начало текущего месяца
+    )
+    end_date = forms.DateField(
+        label="Конечная дата",
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        initial=timezone.now()  # По умолчанию текущая дата
+    )
 
 
 class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
         fields = ['message']
+
 
 

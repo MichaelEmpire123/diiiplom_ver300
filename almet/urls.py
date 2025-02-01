@@ -24,7 +24,7 @@ urlpatterns = [
     # Служба
     path('employee/appeals/', views.employee_appeals, name='employee_appeals'),
     path('employee/appeals/<int:appeal_id>/', views.view_appeal, name='view_appeal'),
-
+    path('employee/create-report/', views.create_report, name='create_report'),
 
     # Администратор
     path('administrator/categories/', views.admin_categories, name='admin_categories'),

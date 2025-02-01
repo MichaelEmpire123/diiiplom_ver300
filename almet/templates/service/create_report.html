@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Создать отчет{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Создать отчет</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.start_date.label_tag }}
+            {{ form.start_date }}
+        </div>
+        <div class="mb-3">
+            {{ form.end_date.label_tag }}
+            {{ form.end_date }}
+        </div>
+        <button type="submit" class="btn btn-primary">Создать отчет</button>
+    </form>
+</div>
+{% endblock %}

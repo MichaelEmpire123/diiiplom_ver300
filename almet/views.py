@@ -1,3 +1,4 @@
+import io
 import os
 import re
 import secrets
@@ -12,7 +13,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.utils.timezone import make_aware
-from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm, Edit_AppealForm
+from docx import Document
+from docx.shared import Inches
+from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm, Edit_AppealForm, ReportForm
 from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki, \
     Service
 from django.db.models import OuterRef, Subquery, Q
@@ -247,6 +250,71 @@ def view_appeal(request, appeal_id):
         'status_history': status_history,
         'completed_status_id': completed_status_id,  # Передаем ID статуса "Выполнено"
     })
+
+
+
+@login_required
+def create_report(request):
+    if request.method == 'POST':
+        form = ReportForm(request.POST)
+        if form.is_valid():
+            start_date = form.cleaned_data['start_date']
+            end_date = form.cleaned_data['end_date']
+
+            # Фильтруем обращения за выбранный период
+            appeals = Appeals.objects.filter(date_time__range=(start_date, end_date))
+
+            # Фильтруем выполненные обращения
+            completed_appeals = Processing_appeals.objects.filter(
+                id_status__name_status='Выполнено',
+                date_time_setting_status__range=(start_date, end_date)
+            )
+
+            # Создаем Word-документ
+            document = Document()
+            document.add_heading('Отчет по обращениям', 0)
+
+            # Добавляем информацию о периоде
+            document.add_paragraph(f'Период: с {start_date} по {end_date}')
+
+            # Добавляем статистику
+            document.add_heading('Статистика', level=1)
+            document.add_paragraph(f'Всего обращений: {appeals.count()}')
+            document.add_paragraph(f'Выполнено обращений: {completed_appeals.count()}')
+
+            # Добавляем таблицу с выполненными обращениями
+            document.add_heading('Выполненные обращения', level=1)
+            table = document.add_table(rows=1, cols=4)
+            table.style = 'Table Grid'
+            hdr_cells = table.rows[0].cells
+            hdr_cells[0].text = 'Номер обращения'
+            hdr_cells[1].text = 'Гражданин'
+            hdr_cells[2].text = 'Описание'
+            hdr_cells[3].text = 'Дата выполнения'
+
+            for appeal in completed_appeals:
+                row_cells = table.add_row().cells
+                row_cells[0].text = str(appeal.id_appeal.id)
+                row_cells[1].text = f"{appeal.id_appeal.id_sitizen.surname} {appeal.id_appeal.id_sitizen.name}"
+                row_cells[2].text = appeal.id_appeal.description_problem
+                row_cells[3].text = appeal.date_time_setting_status.strftime('%Y-%m-%d %H:%M:%S')
+
+            # Сохраняем документ в байтовый поток
+            buffer = io.BytesIO()
+            document.save(buffer)
+            buffer.seek(0)
+
+            # Возвращаем документ как HTTP-ответ
+            response = HttpResponse(
+                buffer.getvalue(),
+                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+            response['Content-Disposition'] = f'attachment; filename=report_{start_date}_to_{end_date}.docx'
+            return response
+    else:
+        form = ReportForm()
+
+    return render(request, 'service/create_report.html', {'form': form})
 
 
 # _______________________
