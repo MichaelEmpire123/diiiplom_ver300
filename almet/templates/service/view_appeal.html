@@ -22,18 +22,26 @@
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">Изменить статус</h5>
-            <form method="post" action="{% url 'view_appeal' appeal.id %}">
+            <form method="post" action="{% url 'view_appeal' appeal.id %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="mb-3">
                     <label for="status" class="form-label">Новый статус</label>
-                    <select name="status" id="status" class="form-select">
+                    <select name="status" id="status" class="form-select" required>
+                        <option value="" disabled selected>Выберите статус обращения</option>
                         {% for status in statuses %}
-                            <option value="{{ status.id }}"
-                                {% if status.id == appeal.processing_appeals_set.last.id_status.id %} selected {% endif %}>
-                                {{ status.name_status }}
-                            </option>
+                            {% if status.name_status != "Принято" %}
+                                <option value="{{ status.id }}"
+                                    {% if status.id == appeal.processing_appeals_set.last.id_status.id %} selected {% endif %}>
+                                    {{ status.name_status }}
+                                </option>
+                            {% endif %}
                         {% endfor %}
                     </select>
+                </div>
+                <!-- Поле для загрузки фото (скрыто по умолчанию) -->
+                <div class="mb-3" id="photo-field" style="display: none;">
+                    <label for="photo" class="form-label">Прикрепить фото для отчета</label>
+                    <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
                 </div>
                 <button type="submit" class="btn btn-primary">Изменить статус</button>
             </form>
@@ -67,4 +75,16 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Показываем поле для загрузки фото, если выбран статус "Выполнено"
+    document.getElementById('status').addEventListener('change', function() {
+        const photoField = document.getElementById('photo-field');
+        if (this.value === "{{ completed_status_id }}") {  // Используем переданный ID
+            photoField.style.display = 'block';
+        } else {
+            photoField.style.display = 'none';
+        }
+    });
+</script>
 {% endblock %}

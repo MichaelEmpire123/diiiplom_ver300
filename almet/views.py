@@ -1,3 +1,4 @@
+import os
 import re
 import secrets
 import string
@@ -24,6 +25,15 @@ def index(request):
 
 
 def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('profile')  # Замените 'profile' на нужный URL
+
+
+    if request.method == 'GET':
+        # Рендерим страницу авторизации для GET-запросов
+        return render(request, 'auth/login.html')
+
+
     if request.method == 'POST':
         # Получаем данные из формы
         login_input = request.POST.get('login_input')  # Поле для email или телефона
@@ -31,55 +41,53 @@ def login_view(request):
 
         # Проверяем, что все поля заполнены
         if not login_input or not password:
-            messages.error(request, 'Пожалуйста, заполните все поля.')
-            return render(request, 'auth/login.html')
+            return JsonResponse({'success': False, 'message': 'Пожалуйста, заполните все поля.'})
 
         user = None
 
         # Проверяем, является ли введённое значение email
         if '@' in login_input:
             # Если введён email, проверяем как жителя, так и сотрудника
-            print(f"Пытаемся аутентифицировать пользователя с email: {login_input}")
             try:
                 # Ищем пользователя по email
                 user = User.objects.get(email=login_input)
-                print(f"Найден пользователь: {user}")
 
                 # Проверяем пароль вручную
                 if user.check_password(password):
-                    print("Пароль верный. Аутентификация успешна.")
                     login(request, user)
-                    return redirect('profile')
+                    return JsonResponse({'success': True, 'message': 'Авторизация успешна!', 'redirect': '/profile/'})
                 else:
-                    print("Неверный пароль.")
-                    messages.error(request, 'Неверный email/телефон или пароль.')
+                    return JsonResponse({'success': False, 'message': 'Неверный email/телефон или пароль.'})
             except User.DoesNotExist:
-                print("Пользователь с таким email не найден.")
-                messages.error(request, 'Неверный email/телефон или пароль.')
+                return JsonResponse({'success': False, 'message': 'Неверный email/телефон или пароль.'})
         else:
             # Если введён телефон, проверяем только жителя
             try:
                 citizen = Citizen.objects.get(tel=login_input)
-                print(f"Найден житель с телефоном: {login_input}")
                 user = authenticate(request, email=citizen.email, password=password)
-                print(f"Результат аутентификации: {user}")
 
                 if user is not None:
                     login(request, user)
-                    return redirect('profile')
+                    return JsonResponse({'success': True, 'message': 'Авторизация успешна!', 'redirect': '/profile/'})
                 else:
-                    messages.error(request, 'Неверный email/телефон или пароль.')
+                    return JsonResponse({'success': False, 'message': 'Неверный email/телефон или пароль.'})
             except Citizen.DoesNotExist:
-                # Если телефон не найден, сообщаем об ошибке
-                messages.error(request, 'Неверный email/телефон или пароль.')
+                return JsonResponse({'success': False, 'message': 'Неверный email/телефон или пароль.'})
 
-        return render(request, 'auth/login.html')
+    return JsonResponse({'success': False, 'message': 'Недопустимый метод запроса.'})
 
-    return render(request, 'auth/login.html')
 
 
 
 def register_view(request):
+    if request.user.is_authenticated:
+        return redirect('profile')  # Замените 'profile' на нужный URL
+
+
+    if request.method == 'GET':
+        # Рендерим страницу регистрации для GET-запросов
+        return render(request, 'auth/register.html')
+
     if request.method == 'POST':
         # Получаем данные из формы
         email = request.POST.get('email')
@@ -92,29 +100,28 @@ def register_view(request):
 
         # Проверяем, совпадают ли пароли
         if password != password2:
-            messages.error(request, 'Пароли не совпадают.')
-            return render(request, 'auth/register.html')
+            return JsonResponse({'success': False, 'message': 'Пароли не совпадают.'})
 
         # Проверяем, что все обязательные поля заполнены
         if not email or not password or not surname or not name or not tel:
-            messages.error(request, 'Пожалуйста, заполните все обязательные поля.')
-            return render(request, 'auth/register.html')
+            return JsonResponse({'success': False, 'message': 'Пожалуйста, заполните все обязательные поля.'})
+
+        # Проверяем, что email уникален
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({'success': False, 'message': 'Пользователь с такой почтой уже существует.'})
 
         # Регулярное выражение для проверки русских букв
-        pattern = r'^[А-Яа-яЁё]+$'
+        pattern = r'^[А-Яа-яЁё\s-]+$'
 
         # Проверяем, что ФИО содержит только кириллицу
         if not re.match(pattern, surname):
-            messages.error(request, 'Фамилия должна содержать только русские буквы.')
-            return render(request, 'auth/register.html')
+            return JsonResponse({'success': False, 'message': 'Фамилия должна содержать только русские буквы.'})
 
         if not re.match(pattern, name):
-            messages.error(request, 'Имя должно содержать только русские буквы.')
-            return render(request, 'auth/register.html')
+            return JsonResponse({'success': False, 'message': 'Имя должно содержать только русские буквы.'})
 
         if patronymic and not re.match(pattern, patronymic):  # Отчество может быть пустым
-            messages.error(request, 'Отчество должно содержать только русские буквы.')
-            return render(request, 'auth/register.html')
+            return JsonResponse({'success': False, 'message': 'Отчество должно содержать только русские буквы.'})
 
         # Создаем пользователя и запись в таблице Citizen
         try:
@@ -133,15 +140,15 @@ def register_view(request):
             user.id_citizen = citizen
             user.save()
 
-            login(request, user)
-            messages.success(request, 'Регистрация прошла успешно!')
-            return redirect('profile')
+            return JsonResponse({'success': True, 'message': 'Регистрация прошла успешно!', 'redirect': 'login'})
 
         except Exception as e:
-            messages.error(request, f'Ошибка при регистрации: {str(e)}')
-            return render(request, 'auth/register.html')
+            return JsonResponse({'success': False, 'message': f'Ошибка при регистрации: {str(e)}'})
 
-    return render(request, 'auth/register.html')
+    # Если метод запроса не GET или POST, возвращаем ошибку
+    return JsonResponse({'success': False, 'message': 'Недопустимый метод запроса.'})
+
+
 
 @login_required
 def profile_view(request):
@@ -167,6 +174,11 @@ def employee_appeals(request):
     appeals = Appeals.objects.filter(id_service=service)
     return render(request, 'service/appeals_service.html', {'appeals': appeals})
 
+def get_upload_path(instance, filename):
+    # Генерация пути: appeals/{id}_{фамилия}_{дата}/{filename}
+    date = timezone.now().strftime("%Y-%m-%d")
+    return os.path.join('appeals', f'{instance.id_sitizen.id}_{instance.id_sitizen.surname}_{date}', filename)
+
 @login_required
 def view_appeal(request, appeal_id):
     # Получаем обращение
@@ -177,20 +189,52 @@ def view_appeal(request, appeal_id):
         messages.error(request, 'У вас нет доступа к этому обращению.')
         return redirect('employee_appeals')
 
-    # Получаем все возможные статусы
-    statuses = Status.objects.all()
+    # Получаем все возможные статусы, исключая "Принято"
+    statuses = Status.objects.exclude(name_status='Принято')
+
+    # Проверяем, был ли статус "В работе" в истории
+    has_in_progress_status = Processing_appeals.objects.filter(
+        id_appeal=appeal,
+        id_status__name_status='В работе'
+    ).exists()
+
+    # Если статус "В работе" не был выбран, исключаем "Выполнено" из списка
+    if not has_in_progress_status:
+        statuses = statuses.exclude(name_status='Выполнено')
+
+    # Получаем ID статуса "Выполнено" для использования в шаблоне
+    completed_status_id = Status.objects.filter(name_status='Выполнено').values_list('id', flat=True).first()
 
     # Обработка изменения статуса
     if request.method == 'POST':
         new_status_id = request.POST.get('status')
         if new_status_id:
             new_status = get_object_or_404(Status, id=new_status_id)
+            # Если статус "Выполнено", проверяем, загружено ли фото
+            if new_status.name_status == 'Выполнено' and not request.FILES.get('photo'):
+                messages.error(request, 'Для статуса "Выполнено" необходимо загрузить фото.')
+                return redirect('view_appeal', appeal_id=appeal.id)
+
             # Создаем новую запись об изменении статуса
-            Processing_appeals.objects.create(
+            processing = Processing_appeals.objects.create(
                 id_appeal=appeal,
                 id_status=new_status,
                 date_time_setting_status=timezone.now(),
             )
+
+            # Если загружено фото, сохраняем его
+            if new_status.name_status == 'Выполнено' and request.FILES.get('photo'):
+                photo = request.FILES['photo']
+                # Генерируем путь для сохранения фото
+                upload_path = get_upload_path(appeal, photo.name)
+                # Сохраняем фото
+                with open(upload_path, 'wb+') as destination:
+                    for chunk in photo.chunks():
+                        destination.write(chunk)
+                # Сохраняем путь к фото в базе данных
+                processing.photo = upload_path
+                processing.save()
+
             messages.success(request, f'Статус обращения {appeal.id} изменен на {new_status.name_status}.')
             return redirect('view_appeal', appeal_id=appeal.id)
 
@@ -201,6 +245,7 @@ def view_appeal(request, appeal_id):
         'appeal': appeal,
         'statuses': statuses,
         'status_history': status_history,
+        'completed_status_id': completed_status_id,  # Передаем ID статуса "Выполнено"
     })
 
 
