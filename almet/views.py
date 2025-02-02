@@ -177,78 +177,66 @@ def employee_appeals(request):
     appeals = Appeals.objects.filter(id_service=service)
     return render(request, 'service/appeals_service.html', {'appeals': appeals})
 
-def get_upload_path(instance, filename):
-    # Генерация пути: appeals/{id}_{фамилия}_{дата}/{filename}
-    date = timezone.now().strftime("%Y-%m-%d")
-    return os.path.join('appeals', f'{instance.id_sitizen.id}_{instance.id_sitizen.surname}_{date}', filename)
+
+
 
 @login_required
 def view_appeal(request, appeal_id):
-    # Получаем обращение
+    """Просмотр и изменение статуса обращения"""
     appeal = get_object_or_404(Appeals, id=appeal_id)
 
-    # Проверяем, что обращение назначено на службу сотрудника
+    # Проверяем доступ сотрудника к обращению
     if appeal.id_service != request.user.id_sotrudnik.id_service:
         messages.error(request, 'У вас нет доступа к этому обращению.')
         return redirect('employee_appeals')
 
-    # Получаем все возможные статусы, исключая "Принято"
     statuses = Status.objects.exclude(name_status='Принято')
 
-    # Проверяем, был ли статус "В работе" в истории
     has_in_progress_status = Processing_appeals.objects.filter(
         id_appeal=appeal,
         id_status__name_status='В работе'
     ).exists()
 
-    # Если статус "В работе" не был выбран, исключаем "Выполнено" из списка
-    if not has_in_progress_status:
+    if has_in_progress_status:
+        statuses = statuses.exclude(name_status='В работе')
+    else:
         statuses = statuses.exclude(name_status='Выполнено')
 
-    # Получаем ID статуса "Выполнено" для использования в шаблоне
     completed_status_id = Status.objects.filter(name_status='Выполнено').values_list('id', flat=True).first()
 
-    # Обработка изменения статуса
     if request.method == 'POST':
         new_status_id = request.POST.get('status')
         if new_status_id:
             new_status = get_object_or_404(Status, id=new_status_id)
-            # Если статус "Выполнено", проверяем, загружено ли фото
+
             if new_status.name_status == 'Выполнено' and not request.FILES.get('photo'):
                 messages.error(request, 'Для статуса "Выполнено" необходимо загрузить фото.')
                 return redirect('view_appeal', appeal_id=appeal.id)
 
-            # Создаем новую запись об изменении статуса
             processing = Processing_appeals.objects.create(
                 id_appeal=appeal,
                 id_status=new_status,
                 date_time_setting_status=timezone.now(),
             )
 
-            # Если загружено фото, сохраняем его
-            if new_status.name_status == 'Выполнено' and request.FILES.get('photo'):
-                photo = request.FILES['photo']
-                # Генерируем путь для сохранения фото
-                upload_path = get_upload_path(appeal, photo.name)
-                # Сохраняем фото
-                with open(upload_path, 'wb+') as destination:
-                    for chunk in photo.chunks():
-                        destination.write(chunk)
-                # Сохраняем путь к фото в базе данных
-                processing.photo = upload_path
+            if 'photo' in request.FILES:
+                processing.photo = request.FILES['photo']
                 processing.save()
 
-            messages.success(request, f'Статус обращения {appeal.id} изменен на {new_status.name_status}.')
+                # **Проставляем сотрудника в Appeals**
+                appeal.id_sotrudnik = request.user.id_sotrudnik
+                appeal.save()
+
+            messages.success(request, f'Статус обращения {appeal.id} изменён на {new_status.name_status}.')
             return redirect('view_appeal', appeal_id=appeal.id)
 
-    # Получаем историю изменений статусов
     status_history = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status')
 
     return render(request, 'service/view_appeal.html', {
         'appeal': appeal,
         'statuses': statuses,
         'status_history': status_history,
-        'completed_status_id': completed_status_id,  # Передаем ID статуса "Выполнено"
+        'completed_status_id': completed_status_id,
     })
 
 
@@ -376,27 +364,35 @@ def create_appeal(request):
     if request.method == 'POST':
         form = AppealForm(request.POST, request.FILES)
         if form.is_valid():
-            # Создаем обращение
+            # Создаем обращение, но не сохраняем его еще
             appeal = form.save(commit=False)
             appeal.id_sitizen = request.user.id_citizen
             appeal.date_time = timezone.now()
-            appeal.save()  # Сохраняем обращение, чтобы получить id
+
+            # Сохраняем обращение, чтобы получить ID
+            appeal.save()
 
             # Получаем статус "Принято" (ID = 1)
             status = Status.objects.get(id=1)  # Или name_status='Принято'
 
-            # Создаем запись в Processing_appeals
+            # Создаем запись в Processing_appeals без фото
             Processing_appeals.objects.create(
                 id_appeal=appeal,
                 id_status=status,
                 date_time_setting_status=timezone.now(),
-                # Фото отчета пока не привязываем
             )
+
+            # Загружаем фото только для модели Appeals
+            if 'photo' in request.FILES:
+                appeal.photo = request.FILES['photo']
+                appeal.save()  # Сохраняем фото в объект Appeals
 
             return redirect('profile')
     else:
         form = AppealForm()
     return render(request, 'appeals/create_appeal.html', {'form': form})
+
+
 
 
 @login_required

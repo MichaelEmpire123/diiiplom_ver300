@@ -65,41 +65,53 @@ class Status(models.Model):
         return self.name_status
 
 
-def get_upload_path(instance, filename):
-    # Генерация пути: appeals/{id}_{фамилия}_{дата}/{filename}
-    date = timezone.now().strftime("%Y-%m-%d")
-    return os.path.join('appeals', f'{instance.id_sitizen}_{instance.id_sitizen.surname}_{date}', filename)
 
+
+def get_upload_path(instance, filename):
+    """Генерация пути: appeals/{appeal_id}_{фамилия}_{дата}/{filename}"""
+    date = timezone.now().strftime("%Y-%m-%d")
+
+    if isinstance(instance, Appeals):
+        # Если фото загружается для обращения
+        citizen = instance.id_sitizen
+        appeal_id = instance.id  # Теперь ID обращения доступен после сохранения
+    elif isinstance(instance, Processing_appeals):
+        # В Processing_appeals фото не загружается
+        return None  # Просто не генерируем путь для этого случая
+    else:
+        raise ValueError("get_upload_path вызван для неизвестного типа модели")
+
+    return os.path.join('appeals', f'{appeal_id}_{citizen.id}_{citizen.surname}_{date}', filename)
 
 
 
 
 class Appeals(models.Model):
-    id_sitizen = models.ForeignKey(Citizen, on_delete=models.CASCADE)
+    id_sitizen = models.ForeignKey('Citizen', on_delete=models.CASCADE)
     date_time = models.DateTimeField()
-    id_category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    id_category = models.ForeignKey('Category', on_delete=models.CASCADE)
     description_problem = models.TextField()
     photo = models.ImageField(upload_to=get_upload_path, blank=True, null=True)
-    id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.CASCADE, blank=True, null=True)
+    id_sotrudnik = models.ForeignKey('Sotrudniki', on_delete=models.CASCADE, blank=True, null=True)
     id_service = models.ForeignKey('Service', on_delete=models.CASCADE, blank=True, null=True)  # Связь с городской службой
 
     def __str__(self):
         return f"Обращение {self.id} by {self.id_sitizen}"
 
     def delete(self, *args, **kwargs):
-        """ Удаление фото и папки обращения при удалении записи """
+        """Удаление фото и папки обращения при удалении записи"""
         if self.photo:
-            appeal_folder = os.path.dirname(self.photo.path)  # Получаем путь к папке обращения
+            appeal_folder = os.path.dirname(self.photo.path)
             if os.path.exists(appeal_folder):
                 shutil.rmtree(appeal_folder)  # Удаляем всю папку
-        super().delete(*args, **kwargs)  # Удаляем сам объект
+        super().delete(*args, **kwargs)
+
 
 class Processing_appeals(models.Model):
     id_appeal = models.ForeignKey(Appeals, on_delete=models.CASCADE)
-    id_status = models.ForeignKey(Status, on_delete=models.CASCADE)
+    id_status = models.ForeignKey('Status', on_delete=models.CASCADE)
     date_time_setting_status = models.DateTimeField()
-    photo = models.CharField(max_length=255, blank=True, null=True)
-
+    photo = models.ImageField(upload_to=get_upload_path, blank=True, null=True)
 
     def __str__(self):
         return f"Обработка {self.id} для обращения {self.id_appeal}"
