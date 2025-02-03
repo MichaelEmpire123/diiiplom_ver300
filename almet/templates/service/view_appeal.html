@@ -42,15 +42,13 @@
                 {% csrf_token %}
                 <div class="mb-3">
                     <label for="status" class="form-label">Новый статус</label>
-                    <select name="status" id="status" class="form-select" required>
+                    <select name="status" id="status" class="form-select" {% if appeal.processing_appeals_set.last.id_status.name_status == 'Отклонено' %}disabled{% endif %} required>
                         <option value="" disabled selected>Выберите статус обращения</option>
                         {% for status in statuses %}
-                            {% if status.name_status != "Принято" %}
-                                <option value="{{ status.id }}"
-                                    {% if status.id == appeal.processing_appeals_set.last.id_status.id %} selected {% endif %}>
-                                    {{ status.name_status }}
-                                </option>
-                            {% endif %}
+                            <option value="{{ status.id }}"
+                                {% if status.id == appeal.processing_appeals_set.last.id_status.id %} selected {% endif %}>
+                                {{ status.name_status }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>

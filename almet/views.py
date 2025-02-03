@@ -190,7 +190,12 @@ def view_appeal(request, appeal_id):
         messages.error(request, 'У вас нет доступа к этому обращению.')
         return redirect('employee_appeals')
 
+    # Получаем список доступных статусов
     statuses = Status.objects.exclude(name_status='Принято')
+
+    # Если статус "Отклонено", блокируем изменение статуса
+    if appeal.processing_appeals_set.last().id_status.name_status == 'Отклонено':
+        statuses = statuses.exclude(id__in=[status.id for status in statuses])
 
     has_in_progress_status = Processing_appeals.objects.filter(
         id_appeal=appeal,
@@ -209,21 +214,29 @@ def view_appeal(request, appeal_id):
         if new_status_id:
             new_status = get_object_or_404(Status, id=new_status_id)
 
+            # Проверка на статус "Выполнено" и наличие фото
             if new_status.name_status == 'Выполнено' and not request.FILES.get('photo'):
                 messages.error(request, 'Для статуса "Выполнено" необходимо загрузить фото.')
                 return redirect('view_appeal', appeal_id=appeal.id)
 
+            # Проверка на изменения статуса при "Отклонено"
+            if new_status.name_status == 'Отклонено':
+                messages.error(request, 'Вы не можете изменить статус на "Отклонено".')
+                return redirect('view_appeal', appeal_id=appeal.id)
+
+            # Создаем запись о статусе
             processing = Processing_appeals.objects.create(
                 id_appeal=appeal,
                 id_status=new_status,
                 date_time_setting_status=timezone.now(),
             )
 
+            # Если прикреплен файл, сохраняем его
             if 'photo' in request.FILES:
                 processing.photo = request.FILES['photo']
                 processing.save()
 
-                # **Проставляем сотрудника в Appeals**
+                # Проставляем сотрудника в обращении
                 appeal.id_sotrudnik = request.user.id_sotrudnik
                 appeal.save()
 
@@ -238,6 +251,7 @@ def view_appeal(request, appeal_id):
         'status_history': status_history,
         'completed_status_id': completed_status_id,
     })
+
 
 
 
