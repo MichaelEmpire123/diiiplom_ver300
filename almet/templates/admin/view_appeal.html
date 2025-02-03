@@ -3,7 +3,15 @@
 {% block title %}Просмотр обращения{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+    <div class="container mt-4">
+        <div class="mb-4" style="display: flex; justify-content: space-between;">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="delete" class="btn btn-danger">Удалить</button>
+            </form>
+            <a href="{% url 'admin_all_appeals' %}" class="btn btn-secondary">Назад</a>
+        </div>
+
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
             <h2 class="card-title">Обращение №{{ appeal.id }}</h2>
@@ -17,15 +25,31 @@
                 <p><strong>Назначенная служба:</strong> <span class="badge bg-secondary">{{ appeal.id_service.name|default:"Не назначено" }}</span></p>
             </div>
 
+            <div class="text-center mb-4">
+            <!-- Фото обращения -->
             {% if appeal.photo %}
                 <div class="text-center mb-4">
-                    <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 40%; height: auto;">
+                    <a href="{{ appeal.photo.url }}" data-lightbox="appeal-{{ appeal.id }}" data-title="Фото результата">
+                        <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 50%; height: auto;">
+                    </a>
                 </div>
             {% else %}
                 <p class="text-muted">Фото отсутствует</p>
             {% endif %}
+            </div>
 
+            <div class="text-center mb-4">
+            {% for history in appeal.processing_appeals_set.all %}
+                {% if history.photo %}
+                <h5>Результат обращения</h5>
+                <a href="{{ history.photo.url }}" data-lightbox="appeal-{{ appeal.id }}" data-title="Фото результата">
+                    <img src="{{ history.photo.url }}" alt="Фото результата" class="img-fluid rounded shadow" style="max-width: 50%; height: auto;">
+                </a>
+                {% endif %}
+            {% endfor %}
+            </div>
             <hr>
+
 
             <div class="mb-4">
                 <h4>Изменить статус</h4>
@@ -62,16 +86,29 @@
                 </form>
             </div>
 
+            <!-- История статусов -->
             <div class="mb-4">
-                <h4>Удалить обращение</h4>
-                <form method="post">
-                    {% csrf_token %}
-                    <button type="submit" name="delete" class="btn btn-danger">Удалить</button>
-                </form>
-            </div>
-
-            <div class="mt-4">
-                <a href="{% url 'admin_all_appeals' %}" class="btn btn-secondary">Назад</a>
+                <h4>История статусов</h4>
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Статус</th>
+                            <th>Дата и время</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for history in appeal.processing_appeals_set.all %}
+                        <tr>
+                            <td>{{ history.id_status.name_status }}</td>
+                            <td>{{ history.date_time_setting_status }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">История статусов отсутствует.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

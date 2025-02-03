@@ -1,5 +1,4 @@
 import shutil
-
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
@@ -37,7 +36,7 @@ class Service(models.Model):
     id_street = models.ForeignKey(Street, on_delete=models.CASCADE)
     house = models.CharField(max_length=100)
     flat = models.IntegerField(blank=True, null=True)
-    tel = models.CharField(max_length=20)
+    tel = models.TextField()
 
     def __str__(self):
         return self.name
@@ -68,22 +67,19 @@ class Status(models.Model):
 
 
 def get_upload_path(instance, filename):
-    """Генерация пути: appeals/{appeal_id}_{фамилия}_{дата}/{filename}"""
-    date = timezone.now().strftime("%Y-%m-%d")
-
+    """Генерация пути загрузки фото"""
     if isinstance(instance, Appeals):
-        # Если фото загружается для обращения
         citizen = instance.id_sitizen
-        appeal_id = instance.id  # Теперь ID обращения доступен после сохранения
-    elif isinstance(instance, Processing_appeals):
-        # В Processing_appeals фото не загружается
-        return None  # Просто не генерируем путь для этого случая
-    else:
-        raise ValueError("get_upload_path вызван для неизвестного типа модели")
-
-    return os.path.join('appeals', f'{appeal_id}_{citizen.id}_{citizen.surname}_{date}', filename)
+        appeal_id = instance.id
+        date = timezone.now().strftime("%Y-%m-%d")
+        return os.path.join('appeals', f'{appeal_id}_{citizen.id}_{citizen.surname}_{date}', filename)
 
 
+def get_upload_path_processing(instance, filename):
+    """Генерация пути загрузки фото для обработки обращений"""
+    if instance.photo:
+        return get_upload_path(instance.id_appeal, filename)
+    return None  # Чтобы избежать ошибки
 
 
 class Appeals(models.Model):
@@ -111,7 +107,7 @@ class Processing_appeals(models.Model):
     id_appeal = models.ForeignKey(Appeals, on_delete=models.CASCADE)
     id_status = models.ForeignKey('Status', on_delete=models.CASCADE)
     date_time_setting_status = models.DateTimeField()
-    photo = models.ImageField(upload_to=get_upload_path, blank=True, null=True)
+    photo = models.ImageField(upload_to=get_upload_path_processing, blank=True, null=True)
 
     def __str__(self):
         return f"Обработка {self.id} для обращения {self.id_appeal}"

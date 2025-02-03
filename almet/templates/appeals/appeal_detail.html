@@ -16,18 +16,34 @@
                         <p><strong>Категория:</strong> {{ appeal.id_category.name_official }}</p>
                         <p><strong>Описание:</strong> {{ appeal.description_problem }}</p>
                         <p><strong>Дата создания:</strong> {{ appeal.date_time }}</p>
-                        <p><strong>Текущий статус:</strong> <span class="badge bg-info">{{ appeal.processing_appeals_set.last.id_status.name_status }}</span></p>
+                        <p><strong>Текущий статус:</strong> <span class="badge bg-info">{{ latest_status }}</span></p>
                         <p><strong>Назначенная служба:</strong> <span class="badge bg-secondary">{{ appeal.id_service.name|default:"Не назначено" }}</span></p>
                     </div>
 
                     <!-- Фото обращения -->
+
                     {% if appeal.photo %}
                         <div class="text-center mb-4">
-                            <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 40%; height: auto;">
+                            <h5>Фото обращения</h5>
+                            <a href="{{ appeal.photo.url }}" data-lightbox="appeal-{{ appeal.id }}" data-title="Фото результата">
+                                <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 50%; height: auto;">
+                            </a>
                         </div>
                     {% else %}
                         <p class="text-muted text-center">Фото отсутствует</p>
                     {% endif %}
+
+                    <div class="text-center mb-4">
+                        {% for status in statuses %}
+                        {% if status.photo %}
+                            <h5>Результат обращения</h5>
+                            <a href="{{ status.photo.url }}" data-lightbox="appeal-{{ appeal.id }}" data-title="Фото результата">
+                                <img src="{{ status.photo.url }}" alt="Фото результата" class="img-fluid rounded shadow" style="max-width: 50%; height: auto;">
+                            </a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+
 
                     <!-- История статусов -->
                     <h4 class="mt-4 mb-3">История статусов</h4>
@@ -44,10 +60,11 @@
                                 <tr>
                                     <td>{{ status.id_status.name_status }}</td>
                                     <td>{{ status.date_time_setting_status }}</td>
+
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="2" class="text-center text-muted py-3">Нет информации о статусах</td>
+                                    <td colspan="3" class="text-center text-muted py-3">Нет информации о статусах</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

@@ -99,7 +99,7 @@ class ServiceForm(forms.ModelForm):
         self.fields['id_street'].label = 'Улица'
         self.fields['house'].label = 'Дом'
         self.fields['flat'].label = 'Квартира'
-        self.fields['tel'].label = 'Телефон'
+        self.fields['tel'].label = 'Описание'
 
         # Добавляем классы Bootstrap и плейсхолдеры
         self.fields['name'].widget.attrs.update({
@@ -124,7 +124,7 @@ class ServiceForm(forms.ModelForm):
         })
         self.fields['tel'].widget.attrs.update({
             'class': 'form-control',
-            'placeholder': 'Введите телефон'
+            'placeholder': 'Введите описание'
         })
 
 

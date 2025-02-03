@@ -10,11 +10,27 @@
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">Гражданин: {{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</h5>
+            <p class="card-text"><strong>Категория:</strong> {{ appeal.id_category }}</p>
             <p class="card-text"><strong>Описание:</strong> {{ appeal.description_problem }}</p>
             <p class="card-text"><strong>Текущий статус:</strong> {{ appeal.processing_appeals_set.last.id_status.name_status }}</p>
+            <div class="text-center mb-4">
             {% if appeal.photo %}
-                <img style="width: 300px; height: 300px;" src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid">
+                <a href="{{ appeal.photo.url }}" data-lightbox="appeal-{{ appeal.id }}" data-title="Фото результата">
+                    <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 50%; height: auto;">
+                </a>
             {% endif %}
+            </div>
+
+            <div class="text-center mb-4">
+            {% for history in status_history %}
+                {% if history.photo %}
+                    <h5>Результат обращения</h5>
+                    <a href="{{ history.photo.url }}" data-lightbox="appeal-{{ appeal.id }}" data-title="Фото результата">
+                        <img src="{{ history.photo.url }}" alt="Фото результата" class="img-fluid rounded shadow" style="max-width: 50%; height: auto;">
+                    </a>
+                {% endif %}
+            {% endfor %}
+            </div>
         </div>
     </div>
 

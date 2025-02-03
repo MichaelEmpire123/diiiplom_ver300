@@ -433,11 +433,12 @@ def view_appeals(request):
 def appeal_detail(request, appeal_id):
     appeal = get_object_or_404(Appeals, id=appeal_id, id_sitizen=request.user.id_citizen)
 
-    # Получаем последний статус обращения
-    latest_status = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status').first()
-    latest_status_name = latest_status.id_status.name_status if latest_status else "Неизвестно"
+    # Получаем историю статусов с фотографиями
+    statuses = Processing_appeals.objects.filter(id_appeal=appeal).order_by('date_time_setting_status')
 
-    statuses = Processing_appeals.objects.filter(id_appeal=appeal).order_by('-date_time_setting_status')
+    # Получаем последний статус
+    latest_status = statuses.last()
+    latest_status_name = latest_status.id_status.name_status if latest_status else "Неизвестно"
 
     return render(request, 'appeals/appeal_detail.html', {
         'appeal': appeal,
