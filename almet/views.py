@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -342,7 +342,7 @@ def update_profile(request):
         citizen.tel = tel
         citizen.email = email
         citizen.house = house
-        citizen.flat = flat
+        citizen.flat = flat if flat else None
 
         if city_name:
             city, _ = City.objects.get_or_create(name_city=city_name)
@@ -352,6 +352,22 @@ def update_profile(request):
             citizen.id_street = street
 
         citizen.save()
+
+        # Обработка смены пароля
+        password = request.POST.get('password', '').strip()
+        password_confirm = request.POST.get('password_confirm', '').strip()
+
+        if password and password == password_confirm:
+            # Если оба пароля совпадают, меняем пароль
+            user.set_password(password)
+            user.save()
+            update_session_auth_hash(request, user)  # Обновляем сессию, чтобы пользователь оставался авторизованным
+
+            # Выход из аккаунта после смены пароля
+            logout(request)
+            messages.success(request, 'Пароль был успешно изменён. Пожалуйста, войдите снова.')
+            return redirect('login')  # Перенаправляем на страницу входа
+
         messages.success(request, 'Профиль успешно обновлён.')
         return redirect('profile')
 

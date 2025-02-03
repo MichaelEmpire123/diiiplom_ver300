@@ -25,7 +25,7 @@ class Citizen(models.Model):
     id_city = models.ForeignKey('City', on_delete=models.SET_NULL, null=True, blank=True)
     id_street = models.ForeignKey('Street', on_delete=models.SET_NULL, null=True, blank=True)
     house = models.CharField(max_length=50, blank=True, null=True)  # Делаем поле необязательным
-    flat = models.IntegerField(blank=True, null=True)  # Делаем поле необязательным
+    flat = models.CharField(max_length=10, null=True, blank=True)
 
     def __str__(self):
         return f"{self.surname} {self.name}"
