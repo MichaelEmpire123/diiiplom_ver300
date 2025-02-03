@@ -6,6 +6,8 @@
 <div style="width: 1000px;" class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-10">
+            <a class="btn btn-primary" href="{% url 'create_appeal' %}">Подать обращение</a>
+            <br><br>
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h2 class="card-title text-center mb-0">Мои обращения</h2>
@@ -19,7 +21,7 @@
                                 <select name="status" id="status" class="form-select">
                                     <option value="">Все статусы</option>
                                     {% for status in all_statuses %}
-                                        <option value="{{ status.id }}" {% if request.GET.status == status.id|stringformat:"s" %}selected{% endif %}>
+                                        <option value="{{ status.id }}" {% if status.id|stringformat:"s" == status_id %}selected{% endif %}>
                                             {{ status.name_status }}
                                         </option>
                                     {% endfor %}
@@ -27,13 +29,14 @@
                             </div>
                             <div class="col-md-4">
                                 <label for="date" class="form-label">Дата</label>
-                                <input type="date" name="date" id="date" class="form-control" value="{{ request.GET.date|default_if_none:'' }}">
+                                <input type="date" name="date" id="date" class="form-control" value="{{ date_filter|default_if_none:'' }}">
                             </div>
                             <div class="col-md-4">
                                 <button type="submit" class="btn btn-primary w-100">Применить фильтр</button>
                             </div>
                         </div>
                     </form>
+
 
                     <!-- Таблица обращений -->
                     <div class="table-responsive">

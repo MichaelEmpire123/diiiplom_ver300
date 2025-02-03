@@ -24,7 +24,11 @@ class AppealForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Переопределяем labels на русский язык
+        # Указываем "Выберите категорию"
+        # Указание метки для поля
         self.fields['id_category'].label = 'Категория'
+        # Добавляем пустой элемент в начало списка для выбора категории
+        self.fields['id_category'].choices = [("", "Выберите категорию")] + list(self.fields['id_category'].choices)
         self.fields['description_problem'].label = 'Описание проблемы'
         self.fields['photo'].label = 'Фото проблемы'
 

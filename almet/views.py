@@ -394,25 +394,32 @@ def create_appeal(request):
 
 
 
-
 @login_required
 def view_appeals(request):
-    # Получаем последний статус для каждого обращения
+    # Определяем подзапрос: получаем ID последнего статуса
     latest_status_subquery = Processing_appeals.objects.filter(
         id_appeal=OuterRef('id')
-    ).order_by('-date_time_setting_status').values('id_status__name_status')[:1]
+    ).order_by('-date_time_setting_status').values('id_status')[:1]
 
-    # Фильтрация по статусу и дате
-    status_id = request.GET.get('status')
-    date_filter = request.GET.get('date')
+    # Теперь получаем сам статус
+    latest_status_name_subquery = Status.objects.filter(
+        id=Subquery(latest_status_subquery)
+    ).values('name_status')[:1]
 
+    # Фильтруем обращения только пользователя
     appeals = Appeals.objects.filter(id_sitizen=request.user.id_citizen).annotate(
-        latest_status=Subquery(latest_status_subquery)
+        latest_status=Subquery(latest_status_name_subquery)  # Это строка, а не ID!
     )
 
+    # Фильтр по статусу (ИСПРАВЛЕНО)
+    status_id = request.GET.get('status')
     if status_id:
-        appeals = appeals.filter(processing_appeals__id_status=status_id)
+        appeals = appeals.filter(
+            latest_status=Status.objects.get(id=status_id).name_status
+        )
 
+    # Фильтр по дате
+    date_filter = request.GET.get('date')
     if date_filter:
         try:
             date_obj = make_aware(datetime.strptime(date_filter, "%Y-%m-%d"))
@@ -420,13 +427,23 @@ def view_appeals(request):
         except ValueError:
             pass
 
-    # Получаем все статусы для фильтрации
+    # Получаем все возможные статусы
     all_statuses = Status.objects.all()
+
+    # Дебаг: проверяем статусы в консоли
+    for appeal in appeals:
+        print(f"Обращение {appeal.id}: последний статус — {appeal.latest_status}")
 
     return render(request, 'appeals/view_appeals.html', {
         'appeals': appeals,
         'all_statuses': all_statuses,
+        'status_id': status_id,
+        'date_filter': date_filter,
     })
+
+
+
+
 
 
 @login_required
