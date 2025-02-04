@@ -7,7 +7,8 @@ from datetime import datetime
 import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
-from django.http import HttpResponse, JsonResponse
+from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -531,23 +532,15 @@ def delete_appeal(request, appeal_id):
 
 
 
-
+# ЧАТ
 @login_required
 def chat(request, appeal_id):
-    appeal = get_object_or_404(Appeals, id=appeal_id)
-    if request.method == 'POST':
-        form = MessageForm(request.POST)
-        if form.is_valid():
-            message = form.save(commit=False)
-            message.id_appeals = appeal
-            message.id_sitizen = request.user.id_citizen
-            message.save()
-            return redirect('chat', appeal_id=appeal_id)
-    else:
-        form = MessageForm()
-    messages = Message.objects.filter(id_appeals=appeal)
-    return render(request, 'chat.html', {'appeal': appeal, 'messages': messages, 'form': form})
+    return render(request, 'chat/chat.html')
 
+
+
+
+# ______________________________________________
 
 # Администратор
 # Проверка, является ли пользователь администратором
