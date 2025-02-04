@@ -58,7 +58,7 @@
                                     <td>{{ appeal.id }}</td>
                                     <td>{{ appeal.description_problem }}</td>
                                     <td>
-                                        <span class="badge bg-{% if appeal.latest_status == 'Решено' %}success{% elif appeal.latest_status == 'В обработке' %}warning{% else %}secondary{% endif %}">
+                                        <span class="badge bg-{% if appeal.latest_status == 'Принято' %}info{% elif appeal.latest_status == 'В работе' %}warning{% elif appeal.latest_status == 'Выполнено' %}success{% elif appeal.latest_status == 'Отклонено' %}danger{% else %}secondary{% endif %}">
                                             {{ appeal.latest_status }}
                                         </span>
                                     </td>

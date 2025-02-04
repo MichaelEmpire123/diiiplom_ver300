@@ -70,7 +70,7 @@
                             <td>{{ appeal.id_sitizen.surname }} {{ appeal.id_sitizen.name }}</td>
                             <td>{{ appeal.description_problem }}</td>
                             <td>
-                                <span class="badge bg-{% if appeal.processing_appeals_set.last.id_status.name_status == 'Решено' %}success{% elif appeal.processing_appeals_set.last.id_status.name_status == 'В обработке' %}warning{% else %}secondary{% endif %}">
+                                <span class="badge bg-{% if appeal.processing_appeals_set.last.id_status.name_status == 'Принято' %}info{% elif appeal.processing_appeals_set.last.id_status.name_status == 'В работе' %}warning{% elif appeal.processing_appeals_set.last.id_status.name_status == 'Выполнено' %}success{% elif appeal.processing_appeals_set.last.id_status.name_status == 'Отклонено' %}danger{% else %}secondary{% endif %}">
                                     {{ appeal.processing_appeals_set.last.id_status.name_status }}
                                 </span>
                             </td>

@@ -143,7 +143,7 @@ def register_view(request):
             user.id_citizen = citizen
             user.save()
 
-            return JsonResponse({'success': True, 'message': 'Регистрация прошла успешно!', 'redirect': 'login'})
+            return JsonResponse({'success': True, 'message': 'Регистрация прошла успешно!'})
 
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Ошибка при регистрации: {str(e)}'})
@@ -426,41 +426,39 @@ def create_appeal(request):
 
 @login_required
 def view_appeals(request):
-    # Определяем подзапрос: получаем ID последнего статуса
+    # Получаем подзапрос с последним статусом для каждого обращения
     latest_status_subquery = Processing_appeals.objects.filter(
         id_appeal=OuterRef('id')
     ).order_by('-date_time_setting_status').values('id_status')[:1]
 
-    # Теперь получаем сам статус
-    latest_status_name_subquery = Status.objects.filter(
-        id=Subquery(latest_status_subquery)
-    ).values('name_status')[:1]
-
-    # Фильтруем обращения только пользователя
+    # Джойн статусов и обращений
     appeals = Appeals.objects.filter(id_sitizen=request.user.id_citizen).annotate(
-        latest_status=Subquery(latest_status_name_subquery)  # Это строка, а не ID!
-    )
+        latest_status_id=Subquery(latest_status_subquery)
+    ).select_related('id_sitizen')
 
-    # Фильтр по статусу (ИСПРАВЛЕНО)
+    # Присоединяем статусы к запросу через Python (чтобы убрать Subquery, если он не сработал)
+    status_dict = {status.id: status.name_status for status in Status.objects.all()}
+    for appeal in appeals:
+        appeal.latest_status = status_dict.get(appeal.latest_status_id, "Нет статуса")
+
+    # Фильтр по статусу
     status_id = request.GET.get('status')
     if status_id:
-        appeals = appeals.filter(
-            latest_status=Status.objects.get(id=status_id).name_status
-        )
+        appeals = [appeal for appeal in appeals if appeal.latest_status_id == int(status_id)]
 
     # Фильтр по дате
     date_filter = request.GET.get('date')
     if date_filter:
         try:
             date_obj = make_aware(datetime.strptime(date_filter, "%Y-%m-%d"))
-            appeals = appeals.filter(date_time__date=date_obj.date())
+            appeals = [appeal for appeal in appeals if appeal.date_time.date() == date_obj.date()]
         except ValueError:
             pass
 
     # Получаем все возможные статусы
     all_statuses = Status.objects.all()
 
-    # Дебаг: проверяем статусы в консоли
+    # Дебаг
     for appeal in appeals:
         print(f"Обращение {appeal.id}: последний статус — {appeal.latest_status}")
 
