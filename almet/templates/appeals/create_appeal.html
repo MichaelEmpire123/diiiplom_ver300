@@ -3,46 +3,51 @@
 {% block title %}Подача обращения{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <a class="btn btn-primary" href="{% url 'view_appeals' %}">Посмотреть мои обращения</a>
-        <br><br>
-        <h2 class="text-center">Подача обращения</h2>
-        <form method="post" enctype="multipart/form-data" class="needs-validation mt-4" novalidate>
-            {% csrf_token %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <a class="btn btn-primary mb-3" href="{% url 'view_appeals' %}">Посмотреть мои обращения</a>
+            <h2 class="text-center">Подача обращения</h2>
+            <form method="post" enctype="multipart/form-data" class="needs-validation mt-4" novalidate>
+                {% csrf_token %}
 
-            <!-- Категория и описание проблемы -->
-            {{ form.id_category.label_tag }} {{ form.id_category }}
-            {{ form.description_problem.label_tag }} {{ form.description_problem }}
+                <div class="mb-3">
+                    <label class="form-label">{{ form.id_category.label }}</label>
+                    {{ form.id_category }}
+                </div>
 
-            <br>
+                <div class="mb-3">
+                    <label class="form-label">{{ form.description_problem.label }}</label>
+                    {{ form.description_problem }}
+                </div>
 
-            <!-- Скрытое стандартное поле загрузки -->
-            <input type="file" id="id_photo" name="photo" class="d-none" accept="image/*" multiple onchange="previewImages(event)">
+                <!-- Поле загрузки файлов -->
+                <input type="file" id="id_photo" name="photo" class="d-none" accept="image/*" multiple onchange="previewImages(event)">
 
-            <!-- Drag & Drop область -->
-            <div id="drop-area" class="border border-primary p-3 text-center rounded mb-3"
-                 ondragover="handleDragOver(event)"
-                 ondragleave="handleDragLeave(event)"
-                 ondrop="handleDrop(event)">
-                <p class="mb-2">Перетащите изображение сюда или</p>
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('id_photo').click();">
-                    Выбрать изображение
-                </button>
-            </div>
+                <!-- Drag & Drop область -->
+                <div id="drop-area" class="border border-primary p-3 text-center rounded mb-3 bg-light"
+                     ondragover="handleDragOver(event)"
+                     ondragleave="handleDragLeave(event)"
+                     ondrop="handleDrop(event)">
+                    <p class="mb-2">Перетащите изображение сюда или</p>
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('id_photo').click();">
+                        <i class="bi bi-paperclip"></i> Выбрать изображение
+                    </button>
+                </div>
 
-            <!-- Блок для предпросмотра -->
-            <div id="file-list" class="d-flex flex-wrap"></div>
+                <!-- Блок для предпросмотра -->
+                <div id="file-list" class="d-flex flex-wrap gap-2"></div>
 
-            <button type="submit" class="btn btn-primary mt-3">Отправить</button>
-        </form>
+                <button type="submit" class="btn btn-primary mt-3 w-100">Отправить</button>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
     function previewImages(event) {
         const fileList = document.getElementById('file-list');
-        fileList.innerHTML = ''; // Очистить список перед новым выбором
+        fileList.innerHTML = '';
 
         const files = event.target.files;
 
@@ -51,11 +56,10 @@
             reader.onload = function(e) {
                 const imgElement = document.createElement('img');
                 imgElement.src = e.target.result;
-                imgElement.style.width = '120px';
-                imgElement.style.height = '120px';
+                imgElement.classList.add('rounded', 'shadow-sm', 'img-thumbnail');
+                imgElement.style.width = '100px';
+                imgElement.style.height = '100px';
                 imgElement.style.objectFit = 'cover';
-                imgElement.style.margin = '10px';
-                imgElement.classList.add('rounded', 'shadow-sm');
                 fileList.appendChild(imgElement);
             }
             reader.readAsDataURL(files[i]);
@@ -64,16 +68,16 @@
 
     function handleDragOver(event) {
         event.preventDefault();
-        document.getElementById('drop-area').classList.add('bg-light');
+        document.getElementById('drop-area').classList.add('bg-info');
     }
 
     function handleDragLeave(event) {
-        document.getElementById('drop-area').classList.remove('bg-light');
+        document.getElementById('drop-area').classList.remove('bg-info');
     }
 
     function handleDrop(event) {
         event.preventDefault();
-        document.getElementById('drop-area').classList.remove('bg-light');
+        document.getElementById('drop-area').classList.remove('bg-info');
 
         const files = event.dataTransfer.files;
         const input = document.getElementById('id_photo');
@@ -87,5 +91,4 @@
         previewImages({ target: input });
     }
 </script>
-
 {% endblock %}
