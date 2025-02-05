@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .models import Appeals, Message, Service
+from .models import Appeals, Message, Service, Street
 
 
 def validate_image_format(file):
@@ -90,47 +90,49 @@ class EmployeeRegistrationForm(forms.Form):
         })
 
 
+
 class ServiceForm(forms.ModelForm):
+    street = forms.CharField(
+        label='Улица',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Введите улицу'}),
+        required=False
+    )
+
     class Meta:
         model = Service
-        fields = ['name', 'id_city', 'id_street', 'house', 'flat', 'tel']
+        fields = ['name', 'id_city', 'street', 'house', 'flat', 'tel']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Переопределяем labels на русский язык
         self.fields['name'].label = 'Название службы'
         self.fields['id_city'].label = 'Город'
-        self.fields['id_street'].label = 'Улица'
         self.fields['house'].label = 'Дом'
         self.fields['flat'].label = 'Квартира'
         self.fields['tel'].label = 'Описание'
 
-        # Добавляем классы Bootstrap и плейсхолдеры
-        self.fields['name'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Введите название службы'
-        })
-        self.fields['id_city'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Выберите город'
-        })
-        self.fields['id_street'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Выберите улицу'
-        })
-        self.fields['house'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Введите номер дома'
-        })
-        self.fields['flat'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Введите номер квартиры (необязательно)'
-        })
-        self.fields['tel'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Введите описание'
-        })
+        self.fields['name'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите название службы'})
+        self.fields['id_city'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Выберите город'})
+        self.fields['house'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите номер дома'})
+        self.fields['flat'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите номер квартиры (необязательно)'})
+        self.fields['tel'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите описание'})
 
+        # Если редактируется существующий объект, заполняем поле street
+        if self.instance and self.instance.pk:
+            if self.instance.id_street:  # Проверяем, есть ли связанная улица
+                self.fields['street'].initial = self.instance.id_street.name_street
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)  # Создаем объект, но не сохраняем в БД
+        street_name = self.cleaned_data.get('street')  # Получаем введенное значение
+
+        if street_name:  # Проверяем, что поле не пустое
+            street, _ = Street.objects.get_or_create(name_street=street_name)  # Найти или создать улицу
+            instance.id_street = street  # Присваиваем объект Street
+
+        if commit:
+            instance.save()  # Сохраняем объект в БД
+
+        return instance
 
 
 class ChangeRoleForm(forms.Form):
@@ -139,6 +141,7 @@ class ChangeRoleForm(forms.Form):
         ('employee', 'Сотрудник'),
     ]
     role = forms.ChoiceField(choices=ROLE_CHOICES, label='Роль')
+
 
 class AssignServiceForm(forms.Form):
     service = forms.ModelChoiceField(queryset=Service.objects.all(), label='Служба')

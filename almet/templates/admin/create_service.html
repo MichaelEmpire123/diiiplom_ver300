@@ -30,11 +30,11 @@
             {% endif %}
         </div>
         <div class="mb-3">
-            <label for="{{ form.id_street.id_for_label }}" class="form-label">{{ form.id_street.label }}</label>
-            {{ form.id_street }}
-            {% if form.id_street.errors %}
+            <label for="{{ form.street.id_for_label }}" class="form-label">{{ form.street.label }}</label>
+            {{ form.street }}
+            {% if form.street.errors %}
                 <div class="invalid-feedback">
-                    {% for error in form.id_street.errors %}
+                    {% for error in form.street.errors %}
                         {{ error }}
                     {% endfor %}
                 </div>

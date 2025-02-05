@@ -806,16 +806,19 @@ def admin_create_service(request):
     if request.method == 'POST':
         form = ServiceForm(request.POST)
         if form.is_valid():
-            form.save()
+            service = form.save(commit=False)
+            street_name = form.cleaned_data['street']  # Получаем введенное название улицы
+            street, _ = Street.objects.get_or_create(name_street=street_name)  # Ищем или создаем улицу
+            service.id_street = street  # Присваиваем объект Street, а не строку
+            service.save()
             messages.success(request, 'Городская служба успешно создана.')
             return redirect('admin_create_service')
     else:
         form = ServiceForm()
 
-        # Получаем все городские службы
     services = Service.objects.all()
-
     return render(request, 'admin/create_service.html', {'form': form, 'services': services})
+
 
 
 @login_required
