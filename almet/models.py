@@ -119,7 +119,7 @@ class Message(models.Model):
     id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.CASCADE, blank=True, null=True)
     id_sitizen = models.ForeignKey(Citizen, on_delete=models.CASCADE, blank=True, null=True)
     message = models.TextField()
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Сообщение {self.id} by {self.id_sotrudnik or self.id_sitizen}"

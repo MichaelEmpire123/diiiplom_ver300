@@ -44,6 +44,11 @@
                         {% endfor %}
                     </div>
 
+                    <!-- Ссылка на чат -->
+                    <div class="mb-4">
+                        <h4>Чат с администратором</h4>
+                        <a href="{% url 'chat' appeal.id %}" class="btn btn-info">Перейти в чат</a>
+                    </div>
 
                     <!-- История статусов -->
                     <h4 class="mt-4 mb-3">История статусов</h4>

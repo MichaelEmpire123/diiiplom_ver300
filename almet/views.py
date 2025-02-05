@@ -8,7 +8,7 @@ import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -535,9 +535,31 @@ def delete_appeal(request, appeal_id):
 # ЧАТ
 @login_required
 def chat(request, appeal_id):
-    return render(request, 'chat/chat.html')
+    appeal = get_object_or_404(Appeals, id=appeal_id)
+    user = request.user
 
+    # Проверка прав доступа
+    if user.is_staff or user.id_citizen == appeal.id_sitizen or (
+            user.id_sotrudnik and user.id_sotrudnik.id_service == appeal.id_service):
+        # Фильтрация сообщений по текущему пользователю
+        messages = Message.objects.filter(id_appeals=appeal).order_by('created_at')
 
+        # Обработка отправки нового сообщения
+        if request.method == 'POST':
+            message_text = request.POST.get('message')
+            if message_text:
+                message = Message.objects.create(
+                    id_appeals=appeal,
+                    message=message_text,
+                    created_at=timezone.now(),
+                    id_sotrudnik=user.id_sotrudnik if user.id_sotrudnik else None,
+                    id_sitizen=user.id_citizen if user.id_citizen else None,
+                )
+                message.save()
+
+        return render(request, 'chat/chat.html', {'appeal': appeal, 'messages': messages})
+    else:
+        raise Http404("Вы не имеете доступа к этому чату.")
 
 
 # ______________________________________________

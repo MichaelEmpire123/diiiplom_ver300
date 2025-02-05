@@ -13,12 +13,19 @@
             <p class="card-text"><strong>Категория:</strong> {{ appeal.id_category }}</p>
             <p class="card-text"><strong>Описание:</strong> {{ appeal.description_problem }}</p>
             <p class="card-text"><strong>Текущий статус:</strong> {{ appeal.processing_appeals_set.last.id_status.name_status }}</p>
+
+            <!-- Ссылка на чат для городской службы -->
+            <div class="mb-4">
+                <h5>Чат с гражданином</h5>
+                <a href="{% url 'chat' appeal.id %}" class="btn btn-info">Перейти в чат</a>
+            </div>
+
             <div class="text-center mb-4">
-            {% if appeal.photo %}
-                <a href="{{ appeal.photo.url }}" data-lightbox="appeal-{{ appeal.id }}" data-title="Фото результата">
-                    <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 50%; height: auto;">
-                </a>
-            {% endif %}
+                {% if appeal.photo %}
+                    <a href="{{ appeal.photo.url }}" data-lightbox="appeal-{{ appeal.id }}" data-title="Фото результата">
+                        <img src="{{ appeal.photo.url }}" alt="Фото обращения" class="img-fluid rounded shadow" style="max-width: 50%; height: auto;">
+                    </a>
+                {% endif %}
             </div>
 
             <div class="text-center mb-4">
