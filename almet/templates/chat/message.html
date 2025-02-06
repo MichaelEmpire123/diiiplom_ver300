@@ -1,0 +1,15 @@
+<div class="d-flex {% if message.id_sitizen == user.id_citizen %} justify-content-end {% else %} align-items-start {% endif %}">
+    <div class="message {% if message.id_sitizen == user.id_citizen %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
+        <div class="fw-bold">
+            {% if message.id_sitizen %}
+                {{ message.id_sitizen.surname }} {{ message.id_sitizen.name }}
+            {% else %}
+                {{ message.id_sotrudnik.surname }} {{ message.id_sotrudnik.name }}
+            {% endif %}
+        </div>
+        <p>{{ message.message }}</p>
+        {% if message.image %}
+            <img src="{{ message.image.url }}" class="img-fluid mt-2" alt="Отправленное фото">
+        {% endif %}
+    </div>
+</div>

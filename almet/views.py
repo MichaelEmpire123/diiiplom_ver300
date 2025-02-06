@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseForbidden, Http4
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.timezone import make_aware
 from docx import Document
@@ -541,23 +542,37 @@ def chat(request, appeal_id):
     # Проверка прав доступа
     if user.is_staff or user.id_citizen == appeal.id_sitizen or (
             user.id_sotrudnik and user.id_sotrudnik.id_service == appeal.id_service):
-        # Фильтрация сообщений по текущему пользователю
+
+        # Фильтрация сообщений по текущему обращению
         messages = Message.objects.filter(id_appeals=appeal).order_by('created_at')
 
-        # Обработка отправки нового сообщения
+        # Обработка отправки нового сообщения через AJAX
         if request.method == 'POST':
             message_text = request.POST.get('message')
-            if message_text:
+            image = request.FILES.get('image')  # Получение изображения, если прикреплено
+
+            if message_text or image:
                 message = Message.objects.create(
                     id_appeals=appeal,
-                    message=message_text,
+                    message=message_text if message_text else '',
+                    image=image if image else None,
                     created_at=timezone.now(),
                     id_sotrudnik=user.id_sotrudnik if user.id_sotrudnik else None,
                     id_sitizen=user.id_citizen if user.id_citizen else None,
                 )
-                message.save()
 
-        return render(request, 'chat/chat.html', {'appeal': appeal, 'messages': messages})
+                # Получаем HTML-форму для нового сообщения
+                message_html = render_to_string('chat/message.html', {'message': message, 'user': user})
+
+                # Если это AJAX-запрос, отправляем новое сообщение в ответе
+                if request.is_ajax():
+                    return JsonResponse({
+                        'message_html': message_html
+                    })
+
+        # Отправляем все сообщения при обычном запросе
+        return render(request, 'chat/chat.html', {'appeal': appeal, 'chat_messages': messages})
+
     else:
         raise Http404("Вы не имеете доступа к этому чату.")
 

@@ -4,34 +4,74 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="chat d-flex flex-column gap-3">
-        {% for message in messages %}
-            {% if message.id_sitizen == user.id_citizen or message.id_sotrudnik == user.id_sotrudnik %}
-                <div class="d-flex {% if message.id_sitizen %} align-items-start {% else %} justify-content-end {% endif %}">
-                    <div class="message {% if message.id_sitizen %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
-                        <div class="fw-bold">
-                            {% if message.id_sitizen %}
-                                {{ message.id_sitizen.surname }} {{ message.id_sitizen.name }}
-                            {% else %}
-                                {{ message.id_sotrudnik.surname }} {{ message.id_sotrudnik.name }}
-                            {% endif %}
-                        </div>
-                        <p>{{ message.message }}</p>
-                        <img src="https://via.placeholder.com/150" class="img-fluid mt-2" alt="Отправленное фото">
+    <div class="chat d-flex flex-column gap-3" id="chat-messages">
+        {% for message in chat_messages %}
+            <div class="d-flex {% if message.id_sitizen == user.id_citizen %} justify-content-end {% else %} align-items-start {% endif %}">
+                <div class="message {% if message.id_sitizen == user.id_citizen %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
+                    <div class="fw-bold">
+                        {% if message.id_sitizen %}
+                            {{ message.id_sitizen.surname }} {{ message.id_sitizen.name }}
+                        {% else %}
+                            {{ message.id_sotrudnik.surname }} {{ message.id_sotrudnik.name }}
+                        {% endif %}
                     </div>
+                    <p>{{ message.message }}</p>
+                    {% if message.image %}
+                        <img src="{{ message.image.url }}" class="img-fluid mt-2" alt="Отправленное фото">
+                    {% endif %}
                 </div>
-            {% endif %}
+            </div>
         {% endfor %}
     </div>
 
-    <form method="POST" class="input-group mt-3">
+    <form id="message-form" method="POST" enctype="multipart/form-data" class="input-group mt-3">
         {% csrf_token %}
         <input type="text" name="message" class="form-control" placeholder="Введите ваше сообщение">
         <label class="input-group-text" for="fileInput">
             <img src="{% static 'img/paperclip.svg' %}" alt="прикрепить фото">
         </label>
-        <input type="file" class="d-none" id="fileInput" accept="image/*">
+        <input type="file" name="image" class="d-none" id="fileInput" accept="image/*">
         <button type="submit" class="btn btn-primary">Отправить</button>
     </form>
 </div>
+
+<script>
+    // Отправка сообщения через AJAX
+    document.getElementById('message-form').addEventListener('submit', function(e) {
+        e.preventDefault();  // Предотвращаем обычную отправку формы
+
+        var formData = new FormData(this);  // Создаем объект для данных формы
+
+        fetch("{% url 'chat' appeal.id %}", {  // Запрос к серверу
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',  // Добавляем CSRF токен для безопасности
+            },
+        })
+        .then(response => response.json())  // Получаем ответ в формате JSON
+        .then(data => {
+            // Обновляем список сообщений без перезагрузки страницы
+            var messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML += data.message_html;  // Добавляем новое сообщение
+
+            // Очищаем поле ввода
+            document.querySelector('input[name="message"]').value = '';
+        })
+        .catch(error => console.error('Ошибка:', error));
+    });
+
+    // Периодически проверяем новые сообщения каждую секунду
+    function fetchNewMessages() {
+        fetch("{% url 'chat' appeal.id %}")
+            .then(response => response.json())
+            .then(data => {
+                var messagesContainer = document.getElementById('chat-messages');
+                messagesContainer.innerHTML = data.messages_html;
+            })
+            .catch(error => console.error('Ошибка:', error));
+    }
+
+    setInterval(fetchNewMessages, 1000);  // Проверка новых сообщений каждую секунду
+</script>
 {% endblock %}

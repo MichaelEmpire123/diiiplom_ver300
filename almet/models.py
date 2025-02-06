@@ -116,13 +116,16 @@ class Processing_appeals(models.Model):
 
 class Message(models.Model):
     id_appeals = models.ForeignKey(Appeals, on_delete=models.CASCADE)
-    id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.CASCADE, blank=True, null=True)
-    id_sitizen = models.ForeignKey(Citizen, on_delete=models.CASCADE, blank=True, null=True)
-    message = models.TextField()
+    message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.SET_NULL, null=True, blank=True)
+    id_sitizen = models.ForeignKey(Citizen, on_delete=models.SET_NULL, null=True, blank=True)
+    image = models.ImageField(upload_to='chat_images/', blank=True, null=True)  # Добавили поле для изображения
 
     def __str__(self):
-        return f"Сообщение {self.id} by {self.id_sotrudnik or self.id_sitizen}"
+        sender = self.id_sitizen if self.id_sitizen else self.id_sotrudnik
+        return f"{sender.surname} {sender.name}: {self.message}"
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
