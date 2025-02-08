@@ -545,9 +545,12 @@ def chat(request, appeal_id):
     if user.is_staff or user.id_citizen == appeal.id_sitizen or (
             user.id_sotrudnik and user.id_sotrudnik.id_service == appeal.id_service):
         chat_messages = Message.objects.filter(id_appeals=appeal).order_by('created_at')
-        return render(request, 'chat/chat.html', {'appeal': appeal, 'chat_messages': chat_messages})
+
+        # Передаем в шаблон все сообщения с необходимой информацией
+        return render(request, 'chat/chat.html', {'appeal': appeal, 'chat_messages': chat_messages, 'user': user})
 
     raise Http404
+
 
 
 # ______________________________________________

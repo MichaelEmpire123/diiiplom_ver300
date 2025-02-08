@@ -3,8 +3,10 @@
 {% block title %}Чат{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="chat d-flex flex-column gap-3" id="chat-messages">
+<div class="container mt-4" style="height: 100vh; display: flex; flex-direction: column;">
+
+    <!-- Контейнер для сообщений, ограниченный по высоте до формы -->
+    <div class="chat d-flex flex-column gap-3" id="chat-messages" style="flex-grow: 1; overflow-y: auto; max-height: calc(100vh - 120px);">
         {% for message in chat_messages %}
             <div class="d-flex {% if message.sender == user %} justify-content-end {% else %} align-items-start {% endif %}">
                 <div class="message {% if message.sender == user %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
@@ -20,7 +22,8 @@
         {% endfor %}
     </div>
 
-    <form id="message-form" method="POST" enctype="multipart/form-data" class="input-group mt-3">
+    <!-- Форма для отправки сообщений, закреплена снизу -->
+    <form id="message-form" method="POST" enctype="multipart/form-data" class="input-group mt-3" style="position: fixed; bottom: 10px; left: 0; right: 0; z-index: 10; max-width: 80%; margin: 0 auto;">
         {% csrf_token %}
         <input type="text" name="message" class="form-control" placeholder="Введите ваше сообщение" id="message-input">
         <label class="input-group-text" for="fileInput">
@@ -32,13 +35,19 @@
 </div>
 
 <script>
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Прокручиваем чат вниз при загрузке страницы
+    window.addEventListener('load', function() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+
     const chatSocket = new WebSocket(
         'ws://' + window.location.host + '/ws/chat/{{ appeal.id }}/'
     );
 
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
-        const chatMessages = document.getElementById('chat-messages');
 
         const messageElement = document.createElement('div');
         messageElement.classList.add('d-flex');
@@ -63,7 +72,7 @@
 
         const senderName = document.createElement('div');
         senderName.classList.add('fw-bold');
-        senderName.innerText = data.sender;
+        senderName.innerText = data.sender;  // Отображаем имя отправителя
 
         const messageText = document.createElement('p');
         messageText.innerText = data.message;
@@ -80,6 +89,7 @@
 
         messageElement.appendChild(messageContent);
         chatMessages.appendChild(messageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;  // Прокрутка вниз для последнего сообщения
     };
 
     chatSocket.onclose = function(e) {
@@ -97,12 +107,19 @@
             return; // Не отправляем пустые сообщения
         }
 
-        if (message) {
-            chatSocket.send(JSON.stringify({
-                'message': message,
-                'sender_id': {{ user.id }},
-            }));
+        const senderName = '{{ user.first_name }} {{ user.last_name }}';  // Передаем имя пользователя
+
+        const data = {
+            'message': message,
+            'sender': senderName,  // Отправляем имя пользователя
+            'sender_id': {{ user.id }},
+        };
+
+        if (fileInput.files.length > 0) {
+            data.image_url = URL.createObjectURL(fileInput.files[0]);
         }
+
+        chatSocket.send(JSON.stringify(data));
 
         messageInput.value = '';
     });
