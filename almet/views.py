@@ -541,31 +541,13 @@ def chat(request, appeal_id):
     appeal = get_object_or_404(Appeals, id=appeal_id)
     user = request.user
 
-    # Проверка прав доступа
+    # Проверка доступа
     if user.is_staff or user.id_citizen == appeal.id_sitizen or (
-            hasattr(user, 'id_sotrudnik') and user.id_sotrudnik):
-        # Если пользователь имеет доступ, продолжаем работу с чатом
+            user.id_sotrudnik and user.id_sotrudnik.id_service == appeal.id_service):
         chat_messages = Message.objects.filter(id_appeals=appeal).order_by('created_at')
-
-        if request.method == "POST":
-            message_text = request.POST.get('message')
-            image = request.FILES.get('image')
-
-            message = Message.objects.create(
-                id_appeals=appeal,
-                id_sitizen=user.id_citizen,
-                message=message_text,
-                image=image,
-                created_at=timezone.now()
-            )
-
-            message_html = render_to_string('chat/message.html', {'message': message})
-
-            return JsonResponse({'message_html': message_html})
-
         return render(request, 'chat/chat.html', {'appeal': appeal, 'chat_messages': chat_messages})
-    else:
-        raise Http404
+
+    raise Http404
 
 
 # ______________________________________________

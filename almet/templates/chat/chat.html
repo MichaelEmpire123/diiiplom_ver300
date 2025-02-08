@@ -6,14 +6,10 @@
 <div class="container mt-4">
     <div class="chat d-flex flex-column gap-3" id="chat-messages">
         {% for message in chat_messages %}
-            <div class="d-flex {% if message.id_sitizen == user.id_citizen %} justify-content-end {% else %} align-items-start {% endif %}">
-                <div class="message {% if message.id_sitizen == user.id_citizen %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
+            <div class="d-flex {% if message.sender == user %} justify-content-end {% else %} align-items-start {% endif %}">
+                <div class="message {% if message.sender == user %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
                     <div class="fw-bold">
-                        {% if message.id_sitizen %}
-                            {{ message.id_sitizen.surname }} {{ message.id_sitizen.name }}
-                        {% else %}
-                            {{ message.id_sotrudnik.surname }} {{ message.id_sotrudnik.name }}
-                        {% endif %}
+                        {{ message.sender.surname }} {{ message.sender.name }}
                     </div>
                     <p>{{ message.message }}</p>
                     {% if message.image %}
@@ -26,7 +22,7 @@
 
     <form id="message-form" method="POST" enctype="multipart/form-data" class="input-group mt-3">
         {% csrf_token %}
-        <input type="text" name="message" class="form-control" placeholder="Введите ваше сообщение">
+        <input type="text" name="message" class="form-control" placeholder="Введите ваше сообщение" id="message-input">
         <label class="input-group-text" for="fileInput">
             <img src="{% static 'img/paperclip.svg' %}" alt="прикрепить фото">
         </label>
@@ -36,42 +32,79 @@
 </div>
 
 <script>
-    // Отправка сообщения через AJAX
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/chat/{{ appeal.id }}/'
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const chatMessages = document.getElementById('chat-messages');
+
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('d-flex');
+
+        // Определяем, кто отправил сообщение
+        if (data.sender_id === {{ user.id }}) {
+            messageElement.classList.add('justify-content-end');
+        } else {
+            messageElement.classList.add('align-items-start');
+        }
+
+        const messageContent = document.createElement('div');
+        messageContent.classList.add('message', 'text-white', 'p-2', 'rounded', 'w-50');
+        messageContent.style.fontSize = '0.9rem';
+
+        // Цвет фона в зависимости от отправителя
+        if (data.sender_id === {{ user.id }}) {
+            messageContent.classList.add('bg-primary');
+        } else {
+            messageContent.classList.add('bg-success');
+        }
+
+        const senderName = document.createElement('div');
+        senderName.classList.add('fw-bold');
+        senderName.innerText = data.sender;
+
+        const messageText = document.createElement('p');
+        messageText.innerText = data.message;
+
+        messageContent.appendChild(senderName);
+        messageContent.appendChild(messageText);
+
+        if (data.image_url) {
+            const imageElement = document.createElement('img');
+            imageElement.src = data.image_url;
+            imageElement.classList.add('img-fluid', 'mt-2');
+            messageContent.appendChild(imageElement);
+        }
+
+        messageElement.appendChild(messageContent);
+        chatMessages.appendChild(messageElement);
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
     document.getElementById('message-form').addEventListener('submit', function(e) {
-        e.preventDefault();  // Предотвращаем обычную отправку формы
+        e.preventDefault();
 
-        var formData = new FormData(this);  // Создаем объект для данных формы
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
+        const fileInput = document.getElementById('fileInput');
 
-        fetch("{% url 'chat' appeal.id %}", {  // Запрос к серверу
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',  // Добавляем CSRF токен для безопасности
-            },
-        })
-        .then(response => response.json())  // Получаем ответ в формате JSON
-        .then(data => {
-            // Обновляем список сообщений без перезагрузки страницы
-            var messagesContainer = document.getElementById('chat-messages');
-            messagesContainer.innerHTML += data.message_html;  // Добавляем новое сообщение
+        if (!message && fileInput.files.length === 0) {
+            return; // Не отправляем пустые сообщения
+        }
 
-            // Очищаем поле ввода
-            document.querySelector('input[name="message"]').value = '';
-        })
-        .catch(error => console.error('Ошибка:', error));
+        if (message) {
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'sender_id': {{ user.id }},
+            }));
+        }
+
+        messageInput.value = '';
     });
-
-    // Периодически проверяем новые сообщения каждую секунду
-    function fetchNewMessages() {
-        fetch("{% url 'chat' appeal.id %}")
-            .then(response => response.json())
-            .then(data => {
-                var messagesContainer = document.getElementById('chat-messages');
-                messagesContainer.innerHTML = data.messages_html;
-            })
-            .catch(error => console.error('Ошибка:', error));
-    }
-
-    setInterval(fetchNewMessages, 1000);  // Проверка новых сообщений каждую секунду
 </script>
 {% endblock %}

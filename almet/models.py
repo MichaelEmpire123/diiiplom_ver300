@@ -118,9 +118,8 @@ class Message(models.Model):
     id_appeals = models.ForeignKey(Appeals, on_delete=models.CASCADE)
     message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    id_sotrudnik = models.ForeignKey(Sotrudniki, on_delete=models.SET_NULL, null=True, blank=True)
-    id_sitizen = models.ForeignKey(Citizen, on_delete=models.SET_NULL, null=True, blank=True)
-    image = models.ImageField(upload_to='chat_images/', blank=True, null=True)  # Добавили поле для изображения
+    sender = models.ForeignKey('User', on_delete=models.CASCADE, null=True)  # Сделать nullable
+    image = models.ImageField(upload_to='chat_images/', blank=True, null=True)
 
     def __str__(self):
         sender = self.id_sitizen if self.id_sitizen else self.id_sotrudnik
