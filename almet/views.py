@@ -5,6 +5,7 @@ import secrets
 import string
 from datetime import datetime
 import pandas as pd
+from asgiref.sync import async_to_sync
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import PermissionDenied
@@ -23,7 +24,8 @@ from .models import User, Citizen, Street, City, Status, Appeals, Message, Proce
 from django.db.models import OuterRef, Subquery, Q
 import xml.etree.ElementTree as ET
 from django.utils.timezone import now
-
+import json
+from channels.layers import get_channel_layer
 
 def index(request):
     return render(request, 'almet/index.html')
@@ -536,20 +538,78 @@ def delete_appeal(request, appeal_id):
 # ЧАТ
 # В almet/views.py
 
+# Пример передачи данных о сообщениях в шаблон
 @login_required
 def chat(request, appeal_id):
     appeal = get_object_or_404(Appeals, id=appeal_id)
     user = request.user
 
-    # Проверка доступа
-    if user.is_staff or user.id_citizen == appeal.id_sitizen or (
-            user.id_sotrudnik and user.id_sotrudnik.id_service == appeal.id_service):
-        chat_messages = Message.objects.filter(id_appeals=appeal).order_by('created_at')
+    # Определение имени пользователя
+    if user.id_citizen:
+        # Обычный пользователь (житель)
+        sender_name = f"{user.id_citizen.surname} {user.id_citizen.name}"
+    elif user.id_sotrudnik:
+        # Сотрудник
+        sender_name = f"{user.id_sotrudnik.surname} {user.id_sotrudnik.name}"
+    else:
+        # Администратор
+        sender_name = "Админ"
 
-        # Передаем в шаблон все сообщения с необходимой информацией
-        return render(request, 'chat/chat.html', {'appeal': appeal, 'chat_messages': chat_messages, 'user': user})
+    print(f"User: {sender_name}")  # Для отладки
+    # Получаем все сообщения для этого обращения
+    chat_messages = Message.objects.filter(id_appeals=appeal).order_by('created_at')
 
-    raise Http404
+    if request.method == "POST":
+        message = request.POST.get("message")
+        if message:
+            send_message_to_chat(request, appeal_id, message, user)  # Отправка сообщения через WebSocket
+
+    return render(request, 'chat/chat.html', {
+        'appeal': appeal,
+        'chat_messages': chat_messages,
+        'user': user,
+    })
+
+
+
+# Для WebSocket отправки сообщений
+def send_message_to_chat(request, appeal_id, message, sender, user):
+    sender = request.user
+    # Проверяем, кто отправил сообщение (пользователь, сотрудник или администратор)
+    if sender.id_citizen:
+        # Обычный пользователь
+        sender_name = f"{sender.id_citizen.surname} {sender.id_citizen.name}"
+    elif sender.id_sotrudnik:
+        # Сотрудник
+        sender_name = f"{sender.id_sotrudnik.surname} {sender.id_sotrudnik.name}"
+    else:
+        # Администратор
+        sender_name = "Админ"
+
+    # Создание сообщения в базе данных
+    chat_message = Message.objects.create(
+        id_appeals=Appeals.objects.get(id=appeal_id),
+        sender=sender,
+        message=message,
+    )
+
+    # Отправка сообщения всем подключенным пользователям через WebSocket
+    chat_socket_group = f'chat_{appeal_id}'
+    message_data = {
+        'sender_id': sender.id,
+        'sender_name': sender_name,  # Передаем полное имя
+        'message': message,
+        'image_url': chat_message.image.url if chat_message.image else None
+    }
+    async_to_sync(get_channel_layer.group_send)(
+        chat_socket_group,
+        {
+            'type': 'chat_message',
+            'message': json.dumps(message_data)
+        }
+    )
+
+
 
 
 

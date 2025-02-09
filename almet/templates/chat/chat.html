@@ -5,13 +5,22 @@
 {% block content %}
 <div class="container mt-4" style="height: 100vh; display: flex; flex-direction: column;">
 
-    <!-- Контейнер для сообщений, ограниченный по высоте до формы -->
+    <!-- История сообщений отображается через Django -->
     <div class="chat d-flex flex-column gap-3" id="chat-messages" style="flex-grow: 1; overflow-y: auto; max-height: calc(100vh - 120px);">
         {% for message in chat_messages %}
             <div class="d-flex {% if message.sender == user %} justify-content-end {% else %} align-items-start {% endif %}">
                 <div class="message {% if message.sender == user %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
                     <div class="fw-bold">
-                        {{ message.sender.surname }} {{ message.sender.name }}
+                        {% if message.sender.id_citizen %}
+                            <!-- Для жителя -->
+                            {{ message.sender.id_citizen.surname }} {{ message.sender.id_citizen.name }}
+                        {% elif message.sender.id_sotrudnik %}
+                            <!-- Для сотрудника -->
+                            {{ message.sender.id_sotrudnik.id_service.name }}
+                        {% else %}
+                            <!-- Для администратора -->
+                            Админ
+                        {% endif %}
                     </div>
                     <p>{{ message.message }}</p>
                     {% if message.image %}
@@ -22,7 +31,7 @@
         {% endfor %}
     </div>
 
-    <!-- Форма для отправки сообщений, закреплена снизу -->
+    <!-- Форма для отправки сообщений -->
     <form id="message-form" method="POST" enctype="multipart/form-data" class="input-group mt-3" style="position: fixed; bottom: 10px; left: 0; right: 0; z-index: 10; max-width: 80%; margin: 0 auto;">
         {% csrf_token %}
         <input type="text" name="message" class="form-control" placeholder="Введите ваше сообщение" id="message-input">
@@ -32,6 +41,7 @@
         <input type="file" name="image" class="d-none" id="fileInput" accept="image/*">
         <button type="submit" class="btn btn-primary">Отправить</button>
     </form>
+
 </div>
 
 <script>
@@ -49,16 +59,18 @@
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
 
+        // Проверяем, отправил ли пользователь сообщение
         const messageElement = document.createElement('div');
         messageElement.classList.add('d-flex');
 
-        // Определяем, кто отправил сообщение
+        // Если это сообщение текущего пользователя, то отображаем его справа
         if (data.sender_id === {{ user.id }}) {
             messageElement.classList.add('justify-content-end');
         } else {
             messageElement.classList.add('align-items-start');
         }
 
+        // Создаем контейнер для сообщения
         const messageContent = document.createElement('div');
         messageContent.classList.add('message', 'text-white', 'p-2', 'rounded', 'w-50');
         messageContent.style.fontSize = '0.9rem';
@@ -70,9 +82,20 @@
             messageContent.classList.add('bg-success');
         }
 
+        // Имя отправителя
         const senderName = document.createElement('div');
         senderName.classList.add('fw-bold');
-        senderName.innerText = data.sender;  // Отображаем имя отправителя
+        senderName.innerText = data.sender_name || 'Неизвестный пользователь';
+
+        // Правильное отображение имени отправителя
+        let displayName = 'Админ';
+        if ('{{ user.id_citizen }}') {
+            displayName = '{{ user.id_citizen.surname }} {{ user.id_citizen.name }}';  // Для обычного пользователя
+        } else if ('{{ user.id_sotrudnik }}') {
+            displayName = '{{ user.id_sotrudnik.surname }} {{ user.id_sotrudnik.name }}';  // Для сотрудника
+        }
+
+        senderName.innerText = displayName;
 
         const messageText = document.createElement('p');
         messageText.innerText = data.message;
@@ -80,6 +103,7 @@
         messageContent.appendChild(senderName);
         messageContent.appendChild(messageText);
 
+        // Если есть изображение, показываем его
         if (data.image_url) {
             const imageElement = document.createElement('img');
             imageElement.src = data.image_url;
@@ -107,11 +131,10 @@
             return; // Не отправляем пустые сообщения
         }
 
-        const senderName = '{{ user.first_name }} {{ user.last_name }}';  // Передаем имя пользователя
-
+        // Отправка данных о сообщении через WebSocket
         const data = {
             'message': message,
-            'sender': senderName,  // Отправляем имя пользователя
+            'sender_name': '{{ user.get_full_name }}',
             'sender_id': {{ user.id }},
         };
 
@@ -119,9 +142,40 @@
             data.image_url = URL.createObjectURL(fileInput.files[0]);
         }
 
+        // Отправка данных на WebSocket-сервер
         chatSocket.send(JSON.stringify(data));
 
-        messageInput.value = '';
+        // Создаем сообщение сразу в интерфейсе без обновления
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('d-flex', 'justify-content-end'); // Сообщение справа
+
+        const messageContent = document.createElement('div');
+        messageContent.classList.add('message', 'bg-primary', 'text-white', 'p-2', 'rounded', 'w-50');
+        messageContent.style.fontSize = '0.9rem';
+
+        const senderNameElement = document.createElement('div');
+        senderNameElement.classList.add('fw-bold');
+        senderNameElement.innerText = '{{ user.get_full_name }}';
+
+        const messageText = document.createElement('p');
+        messageText.innerText = message;
+
+        messageContent.appendChild(senderNameElement);
+        messageContent.appendChild(messageText);
+
+        if (fileInput.files.length > 0) {
+            const imageElement = document.createElement('img');
+            imageElement.src = data.image_url;
+            imageElement.classList.add('img-fluid', 'mt-2');
+            messageContent.appendChild(imageElement);
+        }
+
+        messageElement.appendChild(messageContent);
+        chatMessages.appendChild(messageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;  // Автопрокрутка вниз
+
+        messageInput.value = ''; // Очищаем поле ввода
     });
 </script>
+
 {% endblock %}
