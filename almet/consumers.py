@@ -82,7 +82,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if sender.id_citizen:
             return f"{sender.id_citizen.surname} {sender.id_citizen.name}"
         elif sender.id_sotrudnik:
-            return f"{sender.id_sotrudnik.surname} {sender.id_sotrudnik.name}"
+            return f"{sender.id_sotrudnik.id_service.name}"
         else:
             return "Админ"
 
