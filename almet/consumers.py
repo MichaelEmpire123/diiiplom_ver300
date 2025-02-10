@@ -44,19 +44,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             # Сохраняем сообщение в базе данных
             appeal = await database_sync_to_async(Appeals.objects.get)(id=self.appeal_id)
-            chat_message = await database_sync_to_async(Message.objects.create)(
-                id_appeals=appeal,
-                sender=sender,
-                message=message
-            )
+            chat_message = await self.save_message(appeal, sender, message)
 
             # Если есть изображение, сохраняем его
             if 'image' in data:
-                image_data = data['image']
-                image_format, image_str = image_data.split(';base64,')
-                ext = image_format.split('/')[-1]
-                image_file = base64.b64decode(image_str)
-                chat_message.image.save(f"message_{chat_message.id}.{ext}", ContentFile(image_file), save=True)
+                await self.save_image(chat_message, data['image'])
 
             # Формируем данные для отправки
             message_data = {
@@ -93,3 +85,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return f"{sender.id_sotrudnik.surname} {sender.id_sotrudnik.name}"
         else:
             return "Админ"
+
+    @database_sync_to_async
+    def save_message(self, appeal, sender, message):
+        """Сохраняем сообщение в базе данных"""
+        return Message.objects.create(
+            id_appeals=appeal,
+            sender=sender,
+            message=message
+        )
+
+    @database_sync_to_async
+    def save_image(self, chat_message, image_data):
+        """Сохраняем изображение в базе данных"""
+        image_format, image_str = image_data.split(';base64,')
+        ext = image_format.split('/')[-1]
+        image_file = base64.b64decode(image_str)
+        chat_message.image.save(f"message_{chat_message.id}.{ext}", ContentFile(image_file), save=True)
