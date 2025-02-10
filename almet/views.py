@@ -573,17 +573,14 @@ def chat(request, appeal_id):
 
 
 # Для WebSocket отправки сообщений
-def send_message_to_chat(request, appeal_id, message, sender, user):
+def send_message_to_chat(request, appeal_id, message, sender):
     sender = request.user
-    # Проверяем, кто отправил сообщение (пользователь, сотрудник или администратор)
+    # Формируем имя отправителя
     if sender.id_citizen:
-        # Обычный пользователь
         sender_name = f"{sender.id_citizen.surname} {sender.id_citizen.name}"
     elif sender.id_sotrudnik:
-        # Сотрудник
-        sender_name = f"{sender.id_sotrudnik.surname} {sender.id_sotrudnik.name}"
+        sender_name = f"{sender.id_sotrudnik.id_service.name}"
     else:
-        # Администратор
         sender_name = "Админ"
 
     # Создание сообщения в базе данных
@@ -593,11 +590,16 @@ def send_message_to_chat(request, appeal_id, message, sender, user):
         message=message,
     )
 
+    # Если есть изображение, сохраняем его
+    if 'image' in request.FILES:
+        image_file = request.FILES['image']
+        chat_message.image.save(image_file.name, image_file, save=True)
+
     # Отправка сообщения всем подключенным пользователям через WebSocket
     chat_socket_group = f'chat_{appeal_id}'
     message_data = {
         'sender_id': sender.id,
-        'sender_name': sender_name,  # Передаем полное имя
+        'sender_name': sender_name,  # Передаем корректное имя
         'message': message,
         'image_url': chat_message.image.url if chat_message.image else None
     }

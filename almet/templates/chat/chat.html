@@ -10,18 +10,21 @@
         {% for message in chat_messages %}
             <div class="d-flex {% if message.sender == user %} justify-content-end {% else %} align-items-start {% endif %}">
                 <div class="message {% if message.sender == user %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
-                    <div class="fw-bold">
-                        {% if message.sender.id_citizen %}
-                            <!-- Для жителя -->
-                            {{ message.sender.id_citizen.surname }} {{ message.sender.id_citizen.name }}
-                        {% elif message.sender.id_sotrudnik %}
-                            <!-- Для сотрудника -->
-                            {{ message.sender.id_sotrudnik.id_service.name }}
-                        {% else %}
-                            <!-- Для администратора -->
-                            Админ
-                        {% endif %}
-                    </div>
+                    <!-- Имя отправителя отображается только для получателя -->
+                    {% if message.sender != user %}
+                        <div class="fw-bold">
+                            {% if message.sender.id_citizen %}
+                                <!-- Для жителя -->
+                                {{ message.sender.id_citizen.surname }} {{ message.sender.id_citizen.name }}
+                            {% elif message.sender.id_sotrudnik %}
+                                <!-- Для сотрудника -->
+                                {{ message.sender.id_sotrudnik.id_service.name }}
+                            {% else %}
+                                <!-- Для администратора -->
+                                Админ
+                            {% endif %}
+                        </div>
+                    {% endif %}
                     <p>{{ message.message }}</p>
                     {% if message.image %}
                         <img src="{{ message.image.url }}" class="img-fluid mt-2" alt="Отправленное фото">
@@ -58,6 +61,7 @@
 
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
+        console.log("Received data:", data);  // Для отладки
 
         // Проверяем, отправил ли пользователь сообщение
         const messageElement = document.createElement('div');
@@ -82,25 +86,17 @@
             messageContent.classList.add('bg-success');
         }
 
-        // Имя отправителя
-        const senderName = document.createElement('div');
-        senderName.classList.add('fw-bold');
-        senderName.innerText = data.sender_name || 'Неизвестный пользователь';
-
-        // Правильное отображение имени отправителя
-        let displayName = 'Админ';
-        if ('{{ user.id_citizen }}') {
-            displayName = '{{ user.id_citizen.surname }} {{ user.id_citizen.name }}';  // Для обычного пользователя
-        } else if ('{{ user.id_sotrudnik }}') {
-            displayName = '{{ user.id_sotrudnik.surname }} {{ user.id_sotrudnik.name }}';  // Для сотрудника
+        // Имя отправителя отображается только для получателя
+        if (data.sender_id !== {{ user.id }}) {
+            const senderName = document.createElement('div');
+            senderName.classList.add('fw-bold');
+            senderName.innerText = data.sender_name || 'Неизвестный пользователь';
+            messageContent.appendChild(senderName);
         }
-
-        senderName.innerText = displayName;
 
         const messageText = document.createElement('p');
         messageText.innerText = data.message;
 
-        messageContent.appendChild(senderName);
         messageContent.appendChild(messageText);
 
         // Если есть изображение, показываем его
@@ -131,50 +127,42 @@
             return; // Не отправляем пустые сообщения
         }
 
-        // Отправка данных о сообщении через WebSocket
-        const data = {
-            'message': message,
-            'sender_name': '{{ user.get_full_name }}',
-            'sender_id': {{ user.id }},
-        };
+        // Создаем объект FormData для отправки текста и изображения
+        const formData = new FormData();
+        formData.append('message', message);
+        formData.append('sender_name', '{{ user.get_full_name }}');
+        formData.append('sender_id', {{ user.id }});
 
         if (fileInput.files.length > 0) {
-            data.image_url = URL.createObjectURL(fileInput.files[0]);
+            formData.append('image', fileInput.files[0]);
         }
 
         // Отправка данных на WebSocket-сервер
-        chatSocket.send(JSON.stringify(data));
-
-        // Создаем сообщение сразу в интерфейсе без обновления
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('d-flex', 'justify-content-end'); // Сообщение справа
-
-        const messageContent = document.createElement('div');
-        messageContent.classList.add('message', 'bg-primary', 'text-white', 'p-2', 'rounded', 'w-50');
-        messageContent.style.fontSize = '0.9rem';
-
-        const senderNameElement = document.createElement('div');
-        senderNameElement.classList.add('fw-bold');
-        senderNameElement.innerText = '{{ user.get_full_name }}';
-
-        const messageText = document.createElement('p');
-        messageText.innerText = message;
-
-        messageContent.appendChild(senderNameElement);
-        messageContent.appendChild(messageText);
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const imageData = event.target.result;
+            const data = {
+                'message': message,
+                'sender_name': '{{ user.get_full_name }}',
+                'sender_id': {{ user.id }},
+                'image': imageData  // Передаем изображение в формате base64
+            };
+            chatSocket.send(JSON.stringify(data));
+        };
 
         if (fileInput.files.length > 0) {
-            const imageElement = document.createElement('img');
-            imageElement.src = data.image_url;
-            imageElement.classList.add('img-fluid', 'mt-2');
-            messageContent.appendChild(imageElement);
+            reader.readAsDataURL(fileInput.files[0]);  // Чтение файла как base64
+        } else {
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'sender_name': '{{ user.get_full_name }}',
+                'sender_id': {{ user.id }}
+            }));
         }
 
-        messageElement.appendChild(messageContent);
-        chatMessages.appendChild(messageElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;  // Автопрокрутка вниз
-
-        messageInput.value = ''; // Очищаем поле ввода
+        // Очищаем поле ввода и сбрасываем файл
+        messageInput.value = '';
+        fileInput.value = '';
     });
 </script>
 

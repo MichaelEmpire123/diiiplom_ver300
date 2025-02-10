@@ -45,32 +45,9 @@
                     </div>
 
                     <div class="mb-4">
-                <!-- Простой переход на страницу чата -->
-                <a href="javascript:void(0);" onclick="startChat({{ appeal.id }})" class="btn btn-info">Перейти в чат</a>
-            </div>
-
-            <script>
-                function startChat(appealId) {
-                    // Здесь можно использовать JavaScript, чтобы инициировать подключение через WebSocket.
-                    const chatSocket = new WebSocket(
-                        'ws://' + window.location.host + '/ws/chat/' + appealId + '/'
-                    );
-
-                    // Ваш код для работы с WebSocket
-                    chatSocket.onopen = function() {
-                        console.log("Подключение к чату установлено");
-                    };
-
-                    chatSocket.onmessage = function(e) {
-                        const data = JSON.parse(e.data);
-                        console.log("Сообщение из чата:", data);
-                    };
-
-                    chatSocket.onclose = function(e) {
-                        console.log("Чат закрыт", e);
-                    };
-                }
-            </script>
+                        <h5>Чат с гражданином</h5>
+                        <a href="{% url 'chat' appeal.id %}" class="btn btn-info">Перейти в чат</a>
+                    </div>
 
                     <!-- История статусов -->
                     <h4 class="mt-4 mb-3">История статусов</h4>
