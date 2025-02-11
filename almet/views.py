@@ -387,9 +387,31 @@ def update_profile(request):
             return redirect('login')  # Перенаправляем на страницу входа
 
         messages.success(request, 'Профиль успешно обновлён.')
-        return redirect('profile')
 
     return render(request, 'auth/update_profile.html')
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if not request.user.check_password(old_password):
+            messages.error(request, 'Старый пароль введен неверно.')
+            return redirect('change_password')
+
+        if new_password != confirm_password:
+            messages.error(request, 'Новые пароли не совпадают.')
+            return redirect('change_password')
+
+        request.user.set_password(new_password)
+        request.user.save()
+        update_session_auth_hash(request, request.user)  # Обновляем сессию, чтобы пользователь оставался авторизованным
+
+        messages.success(request, 'Пароль успешно изменен.')
+
+    return render(request, 'auth/change_password.html')
 
 
 # ОБращения

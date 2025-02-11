@@ -8,8 +8,8 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('register/', views.register_view, name='register'),
     path('profile/', views.profile_view, name='profile'),
-    path('update_profile/', views.update_profile, name='update_profile'),  # Новый маршрут2
-
+    path('update_profile/', views.update_profile, name='update_profile'),
+    path('change_password/', views.change_password, name='change_password'),
 
     # обращения
     path('create_appeal/', views.create_appeal, name='create_appeal'),
