@@ -40,7 +40,7 @@
         <!-- Действия для администратора -->
         {% if user.is_staff or user.is_superuser %}
         <h5>Администратор действия:</h5>
-        <ul>
+        <ul class="nav_profile">
             <li><a href="/admin">Админка Django</a></li>
             <li><a href="{% url 'admin_categories' %}">Категории обращений</a></li>
             <li><a href="{% url 'admin_users' %}">Все пользователи</a></li>
