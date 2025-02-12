@@ -1,6 +1,5 @@
 import json
 import base64
-
 import pytz
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -62,7 +61,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': message,
                 'image_url': chat_message.image.url if chat_message.image else None,
                 'created_at': local_created_at,
+                'message_id': chat_message.id,  # Отправляем ID сообщения
             }
+
             # Отправляем сообщение в группу WebSocket
             await self.channel_layer.group_send(
                 self.chat_group_name,
@@ -107,3 +108,44 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ext = image_format.split('/')[-1]
         image_file = base64.b64decode(image_str)
         chat_message.image.save(f"message_{chat_message.id}.{ext}", ContentFile(image_file), save=True)
+
+    async def edit_message(self, event):
+        # Получаем данные для редактирования
+        message_id = event['message_id']
+        new_message = event['new_message']
+        message = await database_sync_to_async(Message.objects.get)(id=message_id)
+        message.message = new_message
+        message.save()
+
+        # Формируем ответ с обновленным сообщением
+        updated_message = {
+            'sender_id': message.sender.id,
+            'sender_name': await self.get_sender_name(message.sender),
+            'message': new_message,
+            'created_at': message.created_at.strftime("%d/%m/%Y %H:%M"),
+            'message_id': message.id,
+        }
+
+        # Отправляем обновленное сообщение всем пользователям
+        await self.channel_layer.group_send(
+            self.chat_group_name,
+            {
+                'type': 'chat_message',
+                'message': json.dumps(updated_message)
+            }
+        )
+
+    async def delete_message(self, event):
+        # Удаляем сообщение
+        message_id = event['message_id']
+        message = await database_sync_to_async(Message.objects.get)(id=message_id)
+        message.delete()
+
+        # Отправляем уведомление о удалении
+        await self.channel_layer.group_send(
+            self.chat_group_name,
+            {
+                'type': 'chat_message',
+                'message': json.dumps({'message_id': message_id, 'deleted': True})
+            }
+        )
