@@ -28,7 +28,9 @@ import json
 from channels.layers import get_channel_layer
 
 def index(request):
-    return render(request, 'almet/index.html')
+    # Получаем все службы
+    services = Service.objects.all()
+    return render(request, 'almet/index.html', {'services': services})
 
 
 def login_view(request):

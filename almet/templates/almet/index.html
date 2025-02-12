@@ -1,13 +1,50 @@
 {% extends 'base.html' %}
 
-{% block title %}Главная страница{% endblock %}
+{% block title %}Главная - Службы Альметьевска{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <h1 class="text-center">Добро пожаловать в City Service!</h1>
-        <p class="lead text-center">Здесь вы можете управлять своими обращениями и взаимодействовать с городскими службами.</p>
+    <div class="container">
+        <h1 class="mt-4 text-center">Добро пожаловать в городской сервис Альметьевска</h1>
+        <p class="text-center">Здесь вы можете узнать о городских службах, оставить жалобу или предложение.</p>
+
+        <!-- Раздел с службами -->
+        <h2 class="mt-5">Городские службы</h2>
+        <div class="row">
+            {% for service in services %}
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ service.name }}</h5>  <!-- Название службы -->
+                            <p class="card-text">{{ service.description }}</p>  <!-- Описание службы -->
+                            <p><strong>Телефон:</strong> {{ service.tel }}</p>  <!-- Телефон службы -->
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <p>Нет доступных служб.</p>
+            {% endfor %}
+        </div>
+
+        <h2 class="mt-5">Если хотите подать обращение</h2>
+        <p>Чтобы оставить обращение, необходимо <a href="{% url 'login' %}">авторизоваться</a>. Если у вас нет аккаунта, пройдите <a href="{% url 'register' %}">регистрацию</a>.</p>
+
+        <!-- Раздел новостей -->
+        <h2 class="mt-5">Новости</h2>
+        <div class="list-group">
+            <a href="#" class="list-group-item list-group-item-action">
+                10 февраля — плановое отключение воды на улицах Ленина и Гагарина.
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+                15 февраля — временные ограничения движения в связи с ремонтом дорог.
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+                20 февраля — общегородской субботник. Присоединяйтесь!
+            </a>
+        </div>
+
+        <!-- Раздел контактов -->
+        <h2 class="mt-5">ТЕЛЕФОНЫ ГОРЯЧЕЙ ЛИНИИ</h2>
+        <p><strong>Email:</strong> almet.gor.liniya@mail.ru</p>
+        <p><strong>Исполнительный комитет АМР::</strong> 8(8553) 26-06-00</p>
     </div>
-</div>
 {% endblock %}
-<!--р-->
