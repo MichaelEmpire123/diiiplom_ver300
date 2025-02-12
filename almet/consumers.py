@@ -1,5 +1,7 @@
 import json
 import base64
+
+import pytz
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Appeals, Message
@@ -50,14 +52,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if 'image' in data:
                 await self.save_image(chat_message, data['image'])
 
+            moscow_tz = pytz.timezone('Europe/Moscow')
+            local_created_at = chat_message.created_at.astimezone(moscow_tz).strftime("%d/%m/%Y %H:%M")
+
             # Формируем данные для отправки
             message_data = {
                 'sender_id': sender.id,
                 'sender_name': sender_name,  # Используем корректное имя
                 'message': message,
-                'image_url': chat_message.image.url if chat_message.image else None
+                'image_url': chat_message.image.url if chat_message.image else None,
+                'created_at': local_created_at,
             }
-
             # Отправляем сообщение в группу WebSocket
             await self.channel_layer.group_send(
                 self.chat_group_name,

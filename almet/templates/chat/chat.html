@@ -8,7 +8,7 @@
     <!-- История сообщений отображается через Django -->
     <div class="chat d-flex flex-column gap-3" id="chat-messages" style="flex-grow: 1; overflow-y: auto; max-height: calc(100vh - 200px);">
         {% for message in chat_messages %}
-            <div class="d-flex {% if message.sender == user %} justify-content-end {% else %} align-items-start {% endif %}">
+            <div class="chat-display-hover d-flex {% if message.sender == user %} justify-content-end {% else %} align-items-start {% endif %}" id="message-{{ message.id }}">
                 <div class="message {% if message.sender == user %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
                     <!-- Имя отправителя отображается только для получателя -->
                     {% if message.sender != user %}
@@ -25,9 +25,29 @@
                             {% endif %}
                         </div>
                     {% endif %}
-                    <p>{{ message.message }}</p>
-                    {% if message.image %}
-                        <img src="{{ message.image.url }}" class="img-fluid mt-2" alt="Отправленное фото">
+
+                    <div class="message-content">
+                        <!-- Текст сообщения или инпут для редактирования -->
+                        {% if message.is_edited %}
+                            <p class="message-text">{{ message.message }} <span class="text-muted">(Изменено)</span></p>
+                        {% else %}
+                            <p class="message-text">{{ message.message }}</p>
+                        {% endif %}
+                        {% if message.image %}
+                            <img src="{{ message.image.url }}" class="img-fluid mt-2" alt="Отправленное фото">
+                        {% endif %}
+                    </div>
+
+                    <span style="font-size: 10px; display: flex; justify-content: end;" class="time">
+                        {{ message.created_at | date:"d/m/Y H:s" }}
+                    </span>
+
+                    <!-- Кнопки для редактирования и удаления -->
+                    {% if message.sender == user %}
+                        <div class="message-actions" style="display: none;">
+                            <button class="btn btn-warning btn-sm edit-btn"><img src="{% static 'img/pencil.svg' %}" alt="Редактировать"></button>
+                            <button class="btn btn-danger btn-sm delete-btn"><img src="{% static 'img/x.svg' %}" alt="Удалить"></button>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -92,6 +112,7 @@
         'ws://' + window.location.host + '/ws/chat/{{ appeal.id }}/'
     );
 
+    // Слушаем приходящие сообщения через WebSocket
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
 
@@ -139,7 +160,45 @@
             messageContent.appendChild(imageElement);
         }
 
+        // Форматирование времени
+        const timeSpan = document.createElement('span');
+        timeSpan.classList.add('time');
+        timeSpan.style.fontSize = '10px';
+        timeSpan.style.display = 'flex';
+        timeSpan.style.justifyContent = 'end';
+        timeSpan.innerText = data.created_at;
+
+        messageContent.appendChild(timeSpan);
         messageElement.appendChild(messageContent);
+
+        // Кнопки для редактирования и удаления сообщений
+        if (data.sender_id === {{ user.id }}) {
+            const messageActions = document.createElement('div');
+            messageActions.classList.add('message-actions');
+            messageActions.style.display = 'none';  // Скрываем кнопки по умолчанию
+
+            const editButton = document.createElement('button');
+            editButton.classList.add('btn', 'btn-warning', 'btn-sm', 'edit-btn');
+            editButton.innerHTML = `<img src="{% static 'img/pencil.svg' %}" alt="Редактировать">`;
+            messageActions.appendChild(editButton);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.classList.add('btn', 'btn-danger', 'btn-sm', 'delete-btn');
+            deleteButton.innerHTML = `<img src="{% static 'img/x.svg' %}" alt="Удалить">`;
+            messageActions.appendChild(deleteButton);
+
+            messageContent.appendChild(messageActions);
+
+            // Добавляем логику для показа кнопок при наведении
+            messageElement.addEventListener('mouseover', function() {
+                messageActions.style.display = 'block';  // Показать кнопки
+            });
+
+            messageElement.addEventListener('mouseout', function() {
+                messageActions.style.display = 'none';  // Скрыть кнопки
+            });
+        }
+
         chatMessages.appendChild(messageElement);
         chatMessages.scrollTop = chatMessages.scrollHeight;  // Прокрутка вниз для последнего сообщения
     };
@@ -192,6 +251,22 @@
         previewImage.src = '#';  // Сбрасываем src изображения
         imagePreview.style.display = 'none';  // Скрываем контейнер предпросмотра
     });
-</script>
 
+    // Показ кнопок редактирования и удаления при наведении
+    chatMessages.addEventListener('mouseover', function(event) {
+        const messageElement = event.target.closest('.chat-display-hover');
+        if (messageElement) {
+            const actions = messageElement.querySelector('.message-actions');
+            if (actions) actions.style.display = 'block';
+        }
+    });
+
+    chatMessages.addEventListener('mouseout', function(event) {
+        const messageElement = event.target.closest('.chat-display-hover');
+        if (messageElement) {
+            const actions = messageElement.querySelector('.message-actions');
+            if (actions) actions.style.display = 'none';
+        }
+    });
+</script>
 {% endblock %}
