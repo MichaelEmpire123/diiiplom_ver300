@@ -100,7 +100,7 @@ class ServiceForm(forms.ModelForm):
 
     class Meta:
         model = Service
-        fields = ['name', 'id_city', 'street', 'house', 'flat', 'tel']
+        fields = ['name', 'id_city', 'street', 'house', 'flat', 'tel', 'description']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -108,13 +108,17 @@ class ServiceForm(forms.ModelForm):
         self.fields['id_city'].label = 'Город'
         self.fields['house'].label = 'Дом'
         self.fields['flat'].label = 'Квартира'
-        self.fields['tel'].label = 'Описание'
+        self.fields['tel'].label = 'Телефон'
+        self.fields['description'].label = 'Описание'
+
 
         self.fields['name'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите название службы'})
         self.fields['id_city'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Выберите город'})
         self.fields['house'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите номер дома'})
         self.fields['flat'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите номер квартиры (необязательно)'})
-        self.fields['tel'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите описание'})
+        self.fields['tel'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите телефон'})
+        self.fields['description'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Введите описание'})
+
 
         # Если редактируется существующий объект, заполняем поле street
         if self.instance and self.instance.pk:
@@ -159,6 +163,9 @@ class ReportForm(forms.Form):
         widget=forms.DateInput(attrs={'type': 'date'}),
         initial=timezone.now()  # По умолчанию текущая дата
     )
+
+
+
 
 
 class MessageForm(forms.ModelForm):

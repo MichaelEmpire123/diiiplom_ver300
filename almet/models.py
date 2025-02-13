@@ -36,7 +36,8 @@ class Service(models.Model):
     id_street = models.ForeignKey(Street, on_delete=models.CASCADE)
     house = models.CharField(max_length=100)
     flat = models.IntegerField(blank=True, null=True)
-    tel = models.TextField()
+    tel = models.CharField(max_length=18, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.name
