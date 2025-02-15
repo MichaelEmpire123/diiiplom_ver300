@@ -158,62 +158,83 @@ const chatSocket = new WebSocket(
 
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
+    console.log("Received message data:", data);
 
-    // Проверяем, отправил ли пользователь сообщение
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('d-flex');
-
-    // Если это сообщение текущего пользователя, то отображаем его справа
-    if (data.sender_id === {{ user.id }}) {
-        messageElement.classList.add('justify-content-end');
+    // Проверяем, редактируется ли сообщение
+    const existingMessage = document.getElementById(`message-${data.message_id}`);
+    if (existingMessage) {
+        // Обновляем существующее сообщение
+        const messageText = existingMessage.querySelector('.message-text');
+        if (messageText) {
+            messageText.innerText = data.message;
+            if (data.is_edited) {
+                messageText.innerHTML = `${data.message} <span class="text-muted">(Изменено)</span>`;
+            }
+        }
     } else {
-        messageElement.classList.add('align-items-start');
+        // Создаем новое сообщение
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('d-flex');
+        messageElement.id = `message-${data.message_id}`;
+
+        // Если это сообщение текущего пользователя, то отображаем его справа
+        if (data.sender_id === {{ user.id }}) {
+            messageElement.classList.add('justify-content-end');
+        } else {
+            messageElement.classList.add('align-items-start');
+        }
+
+        // Создаем контейнер для сообщения
+        const messageContent = document.createElement('div');
+        messageContent.classList.add('message', 'text-white', 'p-2', 'rounded', 'w-50');
+        messageContent.style.fontSize = '0.9rem';
+
+        // Цвет фона в зависимости от отправителя
+        if (data.sender_id === {{ user.id }}) {
+            messageContent.classList.add('bg-primary');
+        } else {
+            messageContent.classList.add('bg-success');
+        }
+
+        // Имя отправителя отображается только для получателя
+        if (data.sender_id !== {{ user.id }}) {
+            const senderName = document.createElement('div');
+            senderName.classList.add('fw-bold');
+            senderName.innerText = data.sender_name || 'Неизвестный пользователь';
+            messageContent.appendChild(senderName);
+        }
+
+        const messageText = document.createElement('p');
+        messageText.classList.add('message-text');
+        messageText.innerText = data.message || '';
+
+        if (data.is_edited) {
+            messageText.innerHTML = `${data.message} <span class="text-muted">(Изменено)</span>`;
+        }
+
+        messageContent.appendChild(messageText);
+
+        // Если есть изображение, показываем его
+        if (data.image_url) {
+            const imageElement = document.createElement('img');
+            imageElement.src = data.image_url;
+            imageElement.classList.add('img-fluid', 'mt-2');
+            messageContent.appendChild(imageElement);
+        }
+
+        // Форматирование времени
+        const timeSpan = document.createElement('span');
+        timeSpan.classList.add('time');
+        timeSpan.style.fontSize = '10px';
+        timeSpan.style.display = 'flex';
+        timeSpan.style.justifyContent = 'end';
+        timeSpan.innerText = data.created_at || '';
+
+        messageContent.appendChild(timeSpan);
+        messageElement.appendChild(messageContent);
+        chatMessages.appendChild(messageElement);
     }
 
-    // Создаем контейнер для сообщения
-    const messageContent = document.createElement('div');
-    messageContent.classList.add('message', 'text-white', 'p-2', 'rounded', 'w-50');
-    messageContent.style.fontSize = '0.9rem';
-
-    // Цвет фона в зависимости от отправителя
-    if (data.sender_id === {{ user.id }}) {
-        messageContent.classList.add('bg-primary');
-    } else {
-        messageContent.classList.add('bg-success');
-    }
-
-    // Имя отправителя отображается только для получателя
-    if (data.sender_id !== {{ user.id }}) {
-        const senderName = document.createElement('div');
-        senderName.classList.add('fw-bold');
-        senderName.innerText = data.sender_name || 'Неизвестный пользователь';  // Запасное значение
-        messageContent.appendChild(senderName);
-    }
-
-    const messageText = document.createElement('p');
-    messageText.innerText = data.message || '';  // Запасное значение для текста сообщения
-
-    messageContent.appendChild(messageText);
-
-    // Если есть изображение, показываем его
-    if (data.image_url) {
-        const imageElement = document.createElement('img');
-        imageElement.src = data.image_url;
-        imageElement.classList.add('img-fluid', 'mt-2');
-        messageContent.appendChild(imageElement);
-    }
-
-    // Форматирование времени
-    const timeSpan = document.createElement('span');
-    timeSpan.classList.add('time');
-    timeSpan.style.fontSize = '10px';
-    timeSpan.style.display = 'flex';
-    timeSpan.style.justifyContent = 'end';
-    timeSpan.innerText = data.created_at || '';  // Запасное значение для времени
-
-    messageContent.appendChild(timeSpan);
-    messageElement.appendChild(messageContent);
-    chatMessages.appendChild(messageElement);
     chatMessages.scrollTop = chatMessages.scrollHeight;  // Прокрутка вниз для последнего сообщения
 };
 

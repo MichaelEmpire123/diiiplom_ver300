@@ -49,10 +49,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Если это редактирование сообщения
             if edit_message_id:
                 chat_message = await self.edit_message(edit_message_id, message, sender)
+                is_edited = True
             else:
                 # Сохраняем новое сообщение в базе данных
                 appeal = await database_sync_to_async(Appeals.objects.get)(id=self.appeal_id)
                 chat_message = await self.save_message(appeal, sender, message)
+                is_edited = False
 
             # Если есть изображение, сохраняем его
             if 'image' in data:
@@ -69,7 +71,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'image_url': chat_message.image.url if chat_message.image else None,
                 'created_at': local_created_at,
                 'message_id': chat_message.id,
-                'is_edited': chat_message.is_edited,
+                'is_edited': is_edited,
                 'is_deleted': chat_message.is_deleted
             }
             print("Sending message data:", message_data)  # Логируем данные перед отправкой

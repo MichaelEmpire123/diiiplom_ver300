@@ -598,29 +598,31 @@ def chat(request, appeal_id):
 @csrf_exempt
 @login_required
 def delete_message(request, message_id):
-    if request.method == 'POST':
-        message = get_object_or_404(Message, id=message_id, sender=request.user)
-        message.message = "Сообщение удалено"
+    try:
+        message = Message.objects.get(id=message_id, sender=request.user)
         message.is_deleted = True
         message.save()
 
-        # Отправка обновления через WebSocket
-        chat_socket_group = f'chat_{message.id_appeals.id}'
-        message_data = {
-            'message_id': message.id,
-            'message': 'Сообщение удалено',
-            'is_deleted': True
-        }
-        async_to_sync(get_channel_layer.group_send)(
-            chat_socket_group,
+        # Получаем объект channel_layer
+        channel_layer = get_channel_layer()
+
+        # Отправляем сообщение в группу WebSocket
+        async_to_sync(channel_layer.group_send)(
+            f"chat_{message.id_appeals.id}",  # Имя группы
             {
-                'type': 'chat_message',
-                'message': json.dumps(message_data)
+                "type": "chat_message",
+                "message": json.dumps({
+                    "message_id": message.id,
+                    "is_deleted": True,
+                }),
             }
         )
 
-        return JsonResponse({'success': True})
-    return JsonResponse({'success': False})
+        return JsonResponse({"success": True})
+    except Message.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Сообщение не найдено"})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)})
 
 @csrf_exempt
 @login_required
