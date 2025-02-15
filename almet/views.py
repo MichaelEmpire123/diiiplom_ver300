@@ -594,43 +594,6 @@ def chat(request, appeal_id):
         'user': user,
     })
 
-
-def edit_message(request, message_id):
-    if request.method == "POST":
-        message = get_object_or_404(Message, id=message_id)
-
-        # Проверяем, что сообщение принадлежит текущему пользователю
-        if message.sender != request.user:
-            return JsonResponse({'error': 'У вас нет прав редактировать это сообщение'}, status=403)
-
-        new_message = request.POST.get('message')
-
-        if new_message:
-            message.message = new_message
-            message.is_edited = True
-            message.save()
-
-            # Отправляем обновлённое сообщение всем подключённым через WebSocket
-            return JsonResponse({'success': 'Сообщение успешно отредактировано'})
-
-    return JsonResponse({'error': 'Ошибка редактирования'}, status=400)
-
-
-def delete_message(request, message_id):
-    if request.method == "POST":
-        message = get_object_or_404(Message, id=message_id)
-
-        # Проверяем, что сообщение принадлежит текущему пользователю
-        if message.sender != request.user:
-            return JsonResponse({'error': 'У вас нет прав удалять это сообщение'}, status=403)
-
-        message.delete()
-
-        # Отправляем сигнал через WebSocket, чтобы обновить интерфейс
-        return JsonResponse({'success': 'Сообщение успешно удалено'})
-
-
-
 # Для WebSocket отправки сообщений
 def send_message_to_chat(request, appeal_id, message, sender):
     sender = request.user
@@ -669,8 +632,6 @@ def send_message_to_chat(request, appeal_id, message, sender):
             'message': json.dumps(message_data)
         }
     )
-
-
 
 
 

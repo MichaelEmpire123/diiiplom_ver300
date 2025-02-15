@@ -41,13 +41,6 @@
                     <span style="font-size: 10px; display: flex; justify-content: end;" class="time">
                         {{ message.created_at | date:"d/m/Y H:s" }}
                     </span>
-                    <!-- Кнопки для редактирования и удаления -->
-<!--                    {% if message.sender == user %}-->
-<!--                        <div class="message-actions" style="display: none;">-->
-<!--                            <button><img src="{% static 'img/pencil.svg' %}" alt="Редактировать"></button>-->
-<!--                            <button>X</button>-->
-<!--                        </div>-->
-<!--                    {% endif %}-->
                 </div>
             </div>
         {% endfor %}
@@ -77,241 +70,150 @@
 </div>
 
 <script>
-    const chatMessages = document.getElementById('chat-messages');
+const chatMessages = document.getElementById('chat-messages');
+const fileInput = document.getElementById('fileInput');
+const imagePreview = document.getElementById('image-preview');
+const previewImage = document.getElementById('preview-image');
+const removeImageButton = document.getElementById('remove-image');
+
+// Прокручиваем чат вниз при загрузке страницы
+window.addEventListener('load', function() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+
+// Обработчик изменения файла
+fileInput.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImage.src = e.target.result;  // Устанавливаем src изображения
+            imagePreview.style.display = 'block';  // Показываем контейнер предпросмотра
+        };
+        reader.readAsDataURL(file);  // Чтение файла как base64
+    }
+});
+
+// Обработчик удаления изображения
+removeImageButton.addEventListener('click', function(e) {
+    e.preventDefault();
+    fileInput.value = '';  // Очищаем поле выбора файла
+    previewImage.src = '#';  // Сбрасываем src изображения
+    imagePreview.style.display = 'none';  // Скрываем контейнер предпросмотра
+});
+
+const chatSocket = new WebSocket(
+    'ws://' + window.location.host + '/ws/chat/{{ appeal.id }}/'
+);
+
+chatSocket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+
+    // Проверяем, отправил ли пользователь сообщение
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('d-flex');
+
+    // Если это сообщение текущего пользователя, то отображаем его справа
+    if (data.sender_id === {{ user.id }}) {
+        messageElement.classList.add('justify-content-end');
+    } else {
+        messageElement.classList.add('align-items-start');
+    }
+
+    // Создаем контейнер для сообщения
+    const messageContent = document.createElement('div');
+    messageContent.classList.add('message', 'text-white', 'p-2', 'rounded', 'w-50');
+    messageContent.style.fontSize = '0.9rem';
+
+    // Цвет фона в зависимости от отправителя
+    if (data.sender_id === {{ user.id }}) {
+        messageContent.classList.add('bg-primary');
+    } else {
+        messageContent.classList.add('bg-success');
+    }
+
+    // Имя отправителя отображается только для получателя
+    if (data.sender_id !== {{ user.id }}) {
+        const senderName = document.createElement('div');
+        senderName.classList.add('fw-bold');
+        senderName.innerText = data.sender_name || 'Неизвестный пользователь';
+        messageContent.appendChild(senderName);
+    }
+
+    const messageText = document.createElement('p');
+    messageText.innerText = data.message;
+
+    messageContent.appendChild(messageText);
+
+    // Если есть изображение, показываем его
+    if (data.image_url) {
+        const imageElement = document.createElement('img');
+        imageElement.src = data.image_url;
+        imageElement.classList.add('img-fluid', 'mt-2');
+        messageContent.appendChild(imageElement);
+    }
+
+    // Форматирование времени
+    const timeSpan = document.createElement('span');
+    timeSpan.classList.add('time');
+    timeSpan.style.fontSize = '10px';
+    timeSpan.style.display = 'flex';
+    timeSpan.style.justifyContent = 'end';
+    timeSpan.innerText = data.created_at;
+
+    messageContent.appendChild(timeSpan);
+    messageElement.appendChild(messageContent);
+    chatMessages.appendChild(messageElement);
+    chatMessages.scrollTop = chatMessages.scrollHeight;  // Прокрутка вниз для последнего сообщения
+};
+
+chatSocket.onclose = function(e) {
+    console.error('Chat socket closed unexpectedly');
+};
+
+document.getElementById('message-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
     const fileInput = document.getElementById('fileInput');
-    const imagePreview = document.getElementById('image-preview');
-    const previewImage = document.getElementById('preview-image');
-    const removeImageButton = document.getElementById('remove-image');
 
-    // Прокручиваем чат вниз при загрузке страницы
-    window.addEventListener('load', function() {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    });
+    if (!message && fileInput.files.length === 0) {
+        return; // Не отправляем пустые сообщения
+    }
 
-    // Обработчик изменения файла
-    fileInput.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImage.src = e.target.result;  // Устанавливаем src изображения
-                imagePreview.style.display = 'block';  // Показываем контейнер предпросмотра
-            };
-            reader.readAsDataURL(file);  // Чтение файла как base64
-        }
-    });
+    // Создаем объект FormData для отправки текста и изображения
+    const formData = new FormData();
+    formData.append('message', message);
+    formData.append('sender_name', '{{ user.get_full_name }}');
+    formData.append('sender_id', {{ user.id }});
 
-    // Обработчик удаления изображения
-    removeImageButton.addEventListener('click', function(e) {
-        e.preventDefault();
-        fileInput.value = '';  // Очищаем поле выбора файла
-        previewImage.src = '#';  // Сбрасываем src изображения
-        imagePreview.style.display = 'none';  // Скрываем контейнер предпросмотра
-    });
-
-    const chatSocket = new WebSocket(
-        'ws://' + window.location.host + '/ws/chat/{{ appeal.id }}/'
-    );
-
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-
-        // Проверяем, отправил ли пользователь сообщение
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('d-flex');
-
-        // Если это сообщение текущего пользователя, то отображаем его справа
-        if (data.sender_id === {{ user.id }}) {
-            messageElement.classList.add('justify-content-end');
-        } else {
-            messageElement.classList.add('align-items-start');
-        }
-
-        // Создаем контейнер для сообщения
-        const messageContent = document.createElement('div');
-        messageContent.classList.add('message', 'text-white', 'p-2', 'rounded', 'w-50');
-        messageContent.style.fontSize = '0.9rem';
-
-        // Цвет фона в зависимости от отправителя
-        if (data.sender_id === {{ user.id }}) {
-            messageContent.classList.add('bg-primary');
-        } else {
-            messageContent.classList.add('bg-success');
-        }
-
-        // Имя отправителя отображается только для получателя
-        if (data.sender_id !== {{ user.id }}) {
-            const senderName = document.createElement('div');
-            senderName.classList.add('fw-bold');
-            senderName.innerText = data.sender_name || 'Неизвестный пользователь';
-            messageContent.appendChild(senderName);
-        }
-
-        const messageText = document.createElement('p');
-        messageText.innerText = data.message;
-
-        messageContent.appendChild(messageText);
-
-        // Если есть изображение, показываем его
-        if (data.image_url) {
-            const imageElement = document.createElement('img');
-            imageElement.src = data.image_url;
-            imageElement.classList.add('img-fluid', 'mt-2');
-            messageContent.appendChild(imageElement);
-        }
-
-        // Форматирование времени
-        const timeSpan = document.createElement('span');
-        timeSpan.classList.add('time');
-        timeSpan.style.fontSize = '10px';
-        timeSpan.style.display = 'flex';
-        timeSpan.style.justifyContent = 'end';
-        timeSpan.innerText = data.created_at;
-
-        messageContent.appendChild(timeSpan);
-        messageElement.appendChild(messageContent);
-        chatMessages.appendChild(messageElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;  // Прокрутка вниз для последнего сообщения
-    };
-
-    chatSocket.onclose = function(e) {
-        console.error('Chat socket closed unexpectedly');
-    };
-
-    document.getElementById('message-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const messageInput = document.getElementById('message-input');
-        const message = messageInput.value.trim();
-        const fileInput = document.getElementById('fileInput');
-
-        if (!message && fileInput.files.length === 0) {
-            return; // Не отправляем пустые сообщения
-        }
-
-        // Создаем объект FormData для отправки текста и изображения
-        const formData = new FormData();
-        formData.append('message', message);
-        formData.append('sender_name', '{{ user.get_full_name }}');
-        formData.append('sender_id', {{ user.id }});
-
-        if (fileInput.files.length > 0) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const imageData = event.target.result;  // Изображение в формате base64
-                const data = {
-                    'message': message,
-                    'sender_name': '{{ user.get_full_name }}',
-                    'sender_id': {{ user.id }},
-                    'image': imageData  // Передаем изображение в формате base64
-                };
-                chatSocket.send(JSON.stringify(data));
-            };
-            reader.readAsDataURL(fileInput.files[0]);  // Чтение файла как base64
-        } else {
-            chatSocket.send(JSON.stringify({
+    if (fileInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const imageData = event.target.result;  // Изображение в формате base64
+            const data = {
                 'message': message,
                 'sender_name': '{{ user.get_full_name }}',
-                'sender_id': {{ user.id }}
-            }));
-        }
+                'sender_id': {{ user.id }},
+                'image': imageData  // Передаем изображение в формате base64
+            };
+            chatSocket.send(JSON.stringify(data));
+        };
+        reader.readAsDataURL(fileInput.files[0]);  // Чтение файла как base64
+    } else {
+        chatSocket.send(JSON.stringify({
+            'message': message,
+            'sender_name': '{{ user.get_full_name }}',
+            'sender_id': {{ user.id }}
+        }));
+    }
 
-        // Очищаем поле ввода и сбрасываем файл
-        messageInput.value = '';
-        fileInput.value = '';
-        previewImage.src = '#';  // Сбрасываем src изображения
-        imagePreview.style.display = 'none';  // Скрываем контейнер предпросмотра
-    });
-
-    // Показ кнопок редактирования и удаления при наведении
-    chatMessages.addEventListener('mouseover', function(event) {
-        const messageElement = event.target.closest('.chat-display-hover');
-        if (messageElement) {
-            const actions = messageElement.querySelector('.message-actions');
-            if (actions) actions.style.display = 'block';
-        }
-    });
-
-    chatMessages.addEventListener('mouseout', function(event) {
-        const messageElement = event.target.closest('.chat-display-hover');
-        if (messageElement) {
-            const actions = messageElement.querySelector('.message-actions');
-            if (actions) actions.style.display = 'none';
-        }
-    });
-
-    chatMessages.addEventListener('click', function(event) {
-        const messageElement = event.target.closest('.message-actions');
-
-        if (messageElement) {
-            // Обработка кнопки редактирования
-            const editButton = messageElement.querySelector('.edit-btn');
-            if (editButton) {
-                const messageElement = event.target.closest('.chat-display-hover');
-                const messageId = messageElement.id.split('-')[1];  // Получаем ID сообщения
-                const messageText = messageElement.querySelector('.message-text').innerText;
-
-                // Создаем input для редактирования текста
-                const inputField = document.createElement('input');
-                inputField.type = 'text';
-                inputField.value = messageText;
-
-                // Заменяем текст сообщения на input
-                messageElement.querySelector('.message-text').innerHTML = '';
-                messageElement.querySelector('.message-text').appendChild(inputField);
-
-                // Убираем старые кнопки и добавляем кнопки сохранить/отменить
-                const saveButton = document.createElement('button');
-                saveButton.innerText = 'Сохранить';
-                const cancelButton = document.createElement('button');
-                cancelButton.innerText = 'Отменить';
-
-                messageElement.querySelector('.message-actions').appendChild(saveButton);
-                messageElement.querySelector('.message-actions').appendChild(cancelButton);
-
-                // Слушаем событие на сохранение изменений
-                saveButton.addEventListener('click', function() {
-                    const newMessage = inputField.value;
-                    if (newMessage !== messageText) {
-                        // Отправляем редактированное сообщение через WebSocket
-                        const data = {
-                            'type': 'edit_message',
-                            'message_id': messageId,
-                            'new_message': newMessage
-                        };
-                        chatSocket.send(JSON.stringify(data));
-                    }
-                    // Убираем кнопки после сохранения
-                    saveButton.remove();
-                    cancelButton.remove();
-                });
-
-                // Слушаем событие отмены редактирования
-                cancelButton.addEventListener('click', function() {
-                    // Восстанавливаем старое сообщение
-                    messageElement.querySelector('.message-text').innerText = messageText;
-                    // Убираем кнопки
-                    saveButton.remove();
-                    cancelButton.remove();
-                });
-            }
-
-            // Обработка кнопки удаления
-            const deleteButton = messageElement.querySelector('.delete-btn');
-            if (deleteButton) {
-                const messageId = messageElement.id.split('-')[1];  // Получаем ID сообщения
-
-                // Подтверждение удаления через confirm
-                if (confirm('Вы уверены, что хотите удалить это сообщение?')) {
-                    // Отправляем запрос на удаление через WebSocket
-                    const data = {
-                        'type': 'delete_message',
-                        'message_id': messageId
-                    };
-                    chatSocket.send(JSON.stringify(data));
-                }
-            }
-        }
-    });
+    // Очищаем поле ввода и сбрасываем файл
+    messageInput.value = '';
+    fileInput.value = '';
+    previewImage.src = '#';  // Сбрасываем src изображения
+    imagePreview.style.display = 'none';  // Скрываем контейнер предпросмотра
+});
 </script>
 {% endblock %}
