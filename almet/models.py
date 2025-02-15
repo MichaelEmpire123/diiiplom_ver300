@@ -121,7 +121,8 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     sender = models.ForeignKey('User', on_delete=models.CASCADE, null=True)  # Сделать nullable
     image = models.ImageField(upload_to='chat_images/', blank=True, null=True)
-
+    is_edited = models.BooleanField(default=False)  # Новое поле
+    is_deleted = models.BooleanField(default=False)  # Для удаления
 
 
 

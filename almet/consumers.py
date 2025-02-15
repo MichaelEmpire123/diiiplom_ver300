@@ -36,16 +36,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
             data = json.loads(text_data)
             message = data.get('message')
             sender = self.user
+            edit_message_id = data.get('edit_message_id')
 
             if not message and 'image' not in data:
                 return  # Не отправляем пустые сообщения
 
             # Формируем имя отправителя на основе данных пользователя
             sender_name = await self.get_sender_name(sender)
+            if not sender_name:
+                sender_name = "Неизвестный пользователь"  # Запасное значение
 
-            # Сохраняем сообщение в базе данных
-            appeal = await database_sync_to_async(Appeals.objects.get)(id=self.appeal_id)
-            chat_message = await self.save_message(appeal, sender, message)
+            # Если это редактирование сообщения
+            if edit_message_id:
+                chat_message = await self.edit_message(edit_message_id, message, sender)
+            else:
+                # Сохраняем новое сообщение в базе данных
+                appeal = await database_sync_to_async(Appeals.objects.get)(id=self.appeal_id)
+                chat_message = await self.save_message(appeal, sender, message)
 
             # Если есть изображение, сохраняем его
             if 'image' in data:
@@ -57,12 +64,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Формируем данные для отправки
             message_data = {
                 'sender_id': sender.id,
-                'sender_name': sender_name,  # Используем корректное имя
+                'sender_name': sender_name,  # Убедитесь, что это поле передается
                 'message': message,
                 'image_url': chat_message.image.url if chat_message.image else None,
                 'created_at': local_created_at,
-                'message_id': chat_message.id,  # Отправляем ID сообщения
+                'message_id': chat_message.id,
+                'is_edited': chat_message.is_edited,
+                'is_deleted': chat_message.is_deleted
             }
+            print("Sending message data:", message_data)  # Логируем данные перед отправкой
 
             # Отправляем сообщение в группу WebSocket
             await self.channel_layer.group_send(
@@ -77,10 +87,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             await self.send(text_data=json.dumps({'error': str(e)}))
 
+    @database_sync_to_async
+    def edit_message(self, message_id, new_message, sender):
+        """Редактируем сообщение в базе данных"""
+        message = Message.objects.get(id=message_id, sender=sender)
+        message.message = new_message
+        message.is_edited = True
+        message.save()
+        return message
+
     async def chat_message(self, event):
         # Получаем сообщение из события и отправляем его пользователю
-        message = event['message']
-        await self.send(text_data=message)
+        message_data = json.loads(event['message'])
+        await self.send(text_data=json.dumps(message_data))  # Отправляем все данные
 
     @database_sync_to_async
     def get_sender_name(self, sender):

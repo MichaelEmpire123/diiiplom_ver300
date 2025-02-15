@@ -27,26 +27,35 @@
                     {% endif %}
 
                     <div class="message-content">
-                        <!-- Текст сообщения или инпут для редактирования -->
-                        {% if message.is_edited %}
-                            <p class="message-text">{{ message.message }} <span class="text-muted">(Изменено)</span></p>
+                        {% if message.is_deleted %}
+                            <p class="message-text text-muted">Сообщение удалено</p>
                         {% else %}
-                            <p class="message-text">{{ message.message }}</p>
-                        {% endif %}
-                        {% if message.image %}
-                            <img src="{{ message.image.url }}" class="img-fluid mt-2" alt="Отправленное фото">
+                            {% if message.is_edited %}
+                                <p class="message-text">{{ message.message }} <span class="text-muted">(Изменено)</span></p>
+                            {% else %}
+                                <p class="message-text">{{ message.message }}</p>
+                            {% endif %}
+                            {% if message.image %}
+                                <img src="{{ message.image.url }}" class="img-fluid mt-2" alt="Отправленное фото">
+                            {% endif %}
                         {% endif %}
                     </div>
 
                     <span style="font-size: 10px; display: flex; justify-content: end;" class="time">
                         {{ message.created_at | date:"d/m/Y H:s" }}
                     </span>
+
+                    <!-- Кнопки взаимодействия для своих сообщений -->
+                    {% if message.sender == user %}
+                        <div class="message-actions">
+                            <button class="btn btn-sm btn-warning edit-message" data-message-id="{{ message.id }}">Изменить</button>
+                            <button class="btn btn-sm btn-danger delete-message" data-message-id="{{ message.id }}">Удалить</button>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         {% endfor %}
     </div>
-
-
 
     <!-- Форма для отправки сообщений -->
     <div class="container" style="position: fixed; bottom: 10px; left: 0; right: 0;">
@@ -60,11 +69,12 @@
         <form id="message-form" method="POST" enctype="multipart/form-data" class="input-group mt-3" style="z-index: 10; max-width: 80%; margin: 0 auto;">
             {% csrf_token %}
             <input type="text" name="message" class="form-control" placeholder="Введите ваше сообщение" id="message-input">
+            <input type="hidden" id="edit-message-id" name="edit_message_id" value="">
             <label class="input-group-text" for="fileInput">
                 <img src="{% static 'img/paperclip.svg' %}" alt="прикрепить фото">
             </label>
             <input type="file" name="image" class="d-none" id="fileInput" accept="image/*">
-            <button type="submit" class="btn btn-primary">Отправить</button>
+            <button type="submit" class="btn btn-primary" id="submit-button">Отправить</button>
         </form>
     </div>
 </div>
@@ -75,6 +85,9 @@ const fileInput = document.getElementById('fileInput');
 const imagePreview = document.getElementById('image-preview');
 const previewImage = document.getElementById('preview-image');
 const removeImageButton = document.getElementById('remove-image');
+const messageInput = document.getElementById('message-input');
+const editMessageIdInput = document.getElementById('edit-message-id');
+const submitButton = document.getElementById('submit-button');
 
 // Прокручиваем чат вниз при загрузке страницы
 window.addEventListener('load', function() {
@@ -100,6 +113,43 @@ removeImageButton.addEventListener('click', function(e) {
     fileInput.value = '';  // Очищаем поле выбора файла
     previewImage.src = '#';  // Сбрасываем src изображения
     imagePreview.style.display = 'none';  // Скрываем контейнер предпросмотра
+});
+
+// Обработчик нажатия на кнопку "Изменить"
+document.querySelectorAll('.edit-message').forEach(button => {
+    button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const messageId = this.getAttribute('data-message-id');
+        const messageElement = document.getElementById(`message-${messageId}`);
+        const messageText = messageElement.querySelector('.message-text').innerText;
+        messageInput.value = messageText;
+        editMessageIdInput.value = messageId;
+        submitButton.innerText = 'Изменить';
+    });
+});
+
+// Обработчик нажатия на кнопку "Удалить"
+document.querySelectorAll('.delete-message').forEach(button => {
+    button.addEventListener('click', function(e) {
+        e.preventDefault();
+        const messageId = this.getAttribute('data-message-id');
+        if (confirm('Вы уверены, что хотите удалить это сообщение?')) {
+            fetch(`/chat/delete_message/${messageId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      const messageElement = document.getElementById(`message-${messageId}`);
+                      messageElement.querySelector('.message-content').innerHTML = '<p class="message-text text-muted">Сообщение удалено</p>';
+                  }
+              });
+        }
+    });
 });
 
 const chatSocket = new WebSocket(
@@ -136,12 +186,12 @@ chatSocket.onmessage = function(e) {
     if (data.sender_id !== {{ user.id }}) {
         const senderName = document.createElement('div');
         senderName.classList.add('fw-bold');
-        senderName.innerText = data.sender_name || 'Неизвестный пользователь';
+        senderName.innerText = data.sender_name || 'Неизвестный пользователь';  // Запасное значение
         messageContent.appendChild(senderName);
     }
 
     const messageText = document.createElement('p');
-    messageText.innerText = data.message;
+    messageText.innerText = data.message || '';  // Запасное значение для текста сообщения
 
     messageContent.appendChild(messageText);
 
@@ -159,7 +209,7 @@ chatSocket.onmessage = function(e) {
     timeSpan.style.fontSize = '10px';
     timeSpan.style.display = 'flex';
     timeSpan.style.justifyContent = 'end';
-    timeSpan.innerText = data.created_at;
+    timeSpan.innerText = data.created_at || '';  // Запасное значение для времени
 
     messageContent.appendChild(timeSpan);
     messageElement.appendChild(messageContent);
@@ -177,6 +227,7 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value.trim();
     const fileInput = document.getElementById('fileInput');
+    const editMessageId = editMessageIdInput.value;
 
     if (!message && fileInput.files.length === 0) {
         return; // Не отправляем пустые сообщения
@@ -188,6 +239,10 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
     formData.append('sender_name', '{{ user.get_full_name }}');
     formData.append('sender_id', {{ user.id }});
 
+    if (editMessageId) {
+        formData.append('edit_message_id', editMessageId);
+    }
+
     if (fileInput.files.length > 0) {
         const reader = new FileReader();
         reader.onload = function(event) {
@@ -196,7 +251,8 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
                 'message': message,
                 'sender_name': '{{ user.get_full_name }}',
                 'sender_id': {{ user.id }},
-                'image': imageData  // Передаем изображение в формате base64
+                'image': imageData,  // Передаем изображение в формате base64
+                'edit_message_id': editMessageId
             };
             chatSocket.send(JSON.stringify(data));
         };
@@ -205,7 +261,8 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
         chatSocket.send(JSON.stringify({
             'message': message,
             'sender_name': '{{ user.get_full_name }}',
-            'sender_id': {{ user.id }}
+            'sender_id': {{ user.id }},
+            'edit_message_id': editMessageId
         }));
     }
 
@@ -214,6 +271,8 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
     fileInput.value = '';
     previewImage.src = '#';  // Сбрасываем src изображения
     imagePreview.style.display = 'none';  // Скрываем контейнер предпросмотра
+    editMessageIdInput.value = '';
+    submitButton.innerText = 'Отправить';
 });
 </script>
 {% endblock %}

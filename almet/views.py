@@ -1,5 +1,6 @@
 import io
 import os
+from django.views.decorators.csrf import csrf_exempt
 import re
 import secrets
 import string
@@ -574,7 +575,7 @@ def chat(request, appeal_id):
         sender_name = f"{user.id_citizen.surname} {user.id_citizen.name}"
     elif user.id_sotrudnik:
         # Сотрудник
-        sender_name = f"{user.id_sotrudnik.surname} {user.id_sotrudnik.name}"
+        sender_name = f"{user.id_service.name}"
     else:
         # Администратор
         sender_name = "Админ"
@@ -593,6 +594,61 @@ def chat(request, appeal_id):
         'chat_messages': chat_messages,
         'user': user,
     })
+
+@csrf_exempt
+@login_required
+def delete_message(request, message_id):
+    if request.method == 'POST':
+        message = get_object_or_404(Message, id=message_id, sender=request.user)
+        message.message = "Сообщение удалено"
+        message.is_deleted = True
+        message.save()
+
+        # Отправка обновления через WebSocket
+        chat_socket_group = f'chat_{message.id_appeals.id}'
+        message_data = {
+            'message_id': message.id,
+            'message': 'Сообщение удалено',
+            'is_deleted': True
+        }
+        async_to_sync(get_channel_layer.group_send)(
+            chat_socket_group,
+            {
+                'type': 'chat_message',
+                'message': json.dumps(message_data)
+            }
+        )
+
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+@csrf_exempt
+@login_required
+def edit_message(request, message_id):
+    if request.method == 'POST':
+        message = get_object_or_404(Message, id=message_id, sender=request.user)
+        new_message = request.POST.get('message')
+        message.message = new_message
+        message.is_edited = True
+        message.save()
+
+        # Отправка обновления через WebSocket
+        chat_socket_group = f'chat_{message.id_appeals.id}'
+        message_data = {
+            'message_id': message.id,
+            'message': new_message,
+            'is_edited': True
+        }
+        async_to_sync(get_channel_layer.group_send)(
+            chat_socket_group,
+            {
+                'type': 'chat_message',
+                'message': json.dumps(message_data)
+            }
+        )
+
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
 
 # Для WebSocket отправки сообщений
 def send_message_to_chat(request, appeal_id, message, sender):

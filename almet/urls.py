@@ -20,6 +20,8 @@ urlpatterns = [
 
     # чат
     path('chat/<int:appeal_id>/', views.chat, name='chat'),
+    path('chat/delete_message/<int:message_id>/', views.delete_message, name='delete_message'),
+    path('chat/edit_message/<int:message_id>/', views.edit_message, name='edit_message'),
 
     # Служба
     path('employee/appeals/', views.employee_appeals, name='employee_appeals'),
