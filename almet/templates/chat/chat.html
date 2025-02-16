@@ -9,7 +9,7 @@
     <div class="chat d-flex flex-column gap-3" id="chat-messages" style="flex-grow: 1; overflow-y: auto; max-height: calc(100vh - 200px);">
         {% for message in chat_messages %}
             <div class="chat-display-hover d-flex {% if message.sender == user %} justify-content-end {% else %} align-items-start {% endif %}" id="message-{{ message.id }}">
-                <div style="position: relative;" class="message {% if message.sender == user %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50" style="font-size: 0.9rem;">
+                <div style="position: relative;" class="message {% if message.sender == user %} bg-primary {% else %} bg-success {% endif %} text-white p-2 rounded w-50 position-relative" style="font-size: 0.9rem;">
                     <!-- Имя отправителя отображается только для получателя -->
                     {% if message.sender != user %}
                         <div class="fw-bold">
@@ -47,9 +47,13 @@
 
                     <!-- Кнопки взаимодействия для своих сообщений -->
                     {% if message.sender == user and message.is_deleted == False %}
-                        <div class="message-actions">
-                            <button class=" edit-message" data-message-id="{{ message.id }}"><i class="bi bi-pencil"></i></button>
-                            <button class=" delete-message" data-message-id="{{ message.id }}"><i class="bi bi-trash"></i></button>
+                        <div class="message-actions position-absolute top-0 end-0 m-1">
+                            <button class="btn btn-sm btn-light edit-message" data-message-id="{{ message.id }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-message" data-message-id="{{ message.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                     {% endif %}
                 </div>
@@ -145,7 +149,7 @@ document.querySelectorAll('.delete-message').forEach(button => {
               .then(data => {
                   if (data.success) {
                       const messageElement = document.getElementById(`message-${messageId}`);
-                      messageElement.querySelector('.message-content').innerHTML = '<p class="message-text text-muted">Сообщение удалено</p>';
+                      messageElement.querySelector('.message-content').innerHTML = '<p class="message-text text-white">Сообщение удалено</p>';
                   }
               });
         }
@@ -168,7 +172,7 @@ chatSocket.onmessage = function(e) {
         if (messageText) {
             messageText.innerText = data.message;
             if (data.is_edited) {
-                messageText.innerHTML = `${data.message} <span class="text-muted">(Изменено)</span>`;
+                messageText.innerHTML = `${data.message} <span class="text-white">(Изменено)</span>`;
             }
         }
 
@@ -217,7 +221,7 @@ chatSocket.onmessage = function(e) {
         messageText.innerText = data.message || '';
 
         if (data.is_edited) {
-            messageText.innerHTML = `${data.message} <span class="text-muted">(Изменено)</span>`;
+            messageText.innerHTML = `${data.message} <span class="text-gray">(Изменено)</span>`;
         }
 
 
