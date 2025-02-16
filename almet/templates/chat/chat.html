@@ -28,10 +28,10 @@
 
                     <div class="message-content">
                         {% if message.is_deleted %}
-                            <p class="message-text text-muted">Сообщение удалено</p>
+                            <p class="message-text text-white">Сообщение удалено</p>
                         {% else %}
                             {% if message.is_edited %}
-                                <p class="message-text">{{ message.message }} <span class="text-muted">(Изменено)</span></p>
+                                <p class="message-text">{{ message.message }} <span class="text-gray">(Изменено)</span></p>
                             {% else %}
                                 <p class="message-text">{{ message.message }}</p>
                             {% endif %}
