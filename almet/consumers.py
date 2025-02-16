@@ -94,7 +94,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Редактируем сообщение в базе данных"""
         message = Message.objects.get(id=message_id, sender=sender)
         message.message = new_message
-        message.is_edited = True
+        if not message.is_edited:  # Устанавливаем флаг is_edited только один раз
+            message.is_edited = True
         message.save()
         return message
 

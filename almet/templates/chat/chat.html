@@ -46,10 +46,10 @@
                     </span>
 
                     <!-- Кнопки взаимодействия для своих сообщений -->
-                    {% if message.sender == user %}
+                    {% if message.sender == user and message.is_deleted == False %}
                         <div class="message-actions">
-                            <button class="btn btn-sm btn-warning edit-message" data-message-id="{{ message.id }}">Изменить</button>
-                            <button class="btn btn-sm btn-danger delete-message" data-message-id="{{ message.id }}">Удалить</button>
+                            <button class=" edit-message" data-message-id="{{ message.id }}"><i class="bi bi-pencil"></i></button>
+                            <button class=" delete-message" data-message-id="{{ message.id }}"><i class="bi bi-trash"></i></button>
                         </div>
                     {% endif %}
                 </div>
@@ -171,6 +171,14 @@ chatSocket.onmessage = function(e) {
                 messageText.innerHTML = `${data.message} <span class="text-muted">(Изменено)</span>`;
             }
         }
+
+        if (data.is_deleted) {
+            const messageActions = existingMessage.querySelector('.message-actions');
+            if (messageActions) {
+                messageActions.style.display = 'none';  // Скрываем кнопки
+            }
+        }
+
     } else {
         // Создаем новое сообщение
         const messageElement = document.createElement('div');
@@ -211,6 +219,8 @@ chatSocket.onmessage = function(e) {
         if (data.is_edited) {
             messageText.innerHTML = `${data.message} <span class="text-muted">(Изменено)</span>`;
         }
+
+
 
         messageContent.appendChild(messageText);
 
