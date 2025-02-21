@@ -4,47 +4,153 @@
 
 {% block content %}
     <div class="container">
-        <h1 class="mt-4 text-center">Добро пожаловать в городской сервис Альметьевска</h1>
-        <p class="text-center">Здесь вы можете узнать о городских службах, оставить жалобу или предложение.</p>
+        <!-- Заголовок и описание -->
+        <div class="jumbotron text-center bg-light mt-4 p-5 rounded shadow">
+            <h1 class="display-4">Добро пожаловать в городской сервис Альметьевска</h1>
+            <p class="lead">Здесь вы можете узнать о городских службах, оставить жалобу или предложение.</p>
+            <hr class="my-4">
+            <p>Чтобы оставить обращение, необходимо <a href="{% url 'login' %}" class="btn btn-primary btn-sm">Авторизоваться</a> или <a href="{% url 'register' %}" class="btn btn-success btn-sm">Зарегистрироваться</a>.</p>
+        </div>
 
         <!-- Раздел с службами -->
-        <h2 class="mt-5">Городские службы</h2>
+        <h2 class="mt-5 text-center">Городские службы</h2>
         <div class="row">
             {% for service in services %}
-                <div class="col-md-4">
-                    <div class="card shadow-sm">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
                         <div class="card-body">
-                            <h5 class="card-title">{{ service.name }}</h5>  <!-- Название службы -->
-                            <p class="card-text">{{ service.description }}</p>  <!-- Описание службы -->
-                            <p><strong>Телефон:</strong> {{ service.tel }}</p>  <!-- Телефон службы -->
+                            <h5 class="card-title">{{ service.name }}</h5>
+                            <p class="card-text">{{ service.description }}</p>
+                            <p><strong>Телефон:</strong> {{ service.tel }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="#" class="btn btn-outline-primary">Подробнее</a>
                         </div>
                     </div>
                 </div>
             {% empty %}
-                <p>Нет доступных служб.</p>
+                <div class="col-12">
+                    <div class="alert alert-info" role="alert">
+                        Нет доступных служб.
+                    </div>
+                </div>
             {% endfor %}
         </div>
 
-        <h2 class="mt-5">Если хотите подать обращение</h2>
-        <p>Чтобы оставить обращение, необходимо <a href="{% url 'login' %}">авторизоваться</a>. Если у вас нет аккаунта, пройдите <a href="{% url 'register' %}">регистрацию</a>.</p>
-
         <!-- Раздел новостей -->
-        <h2 class="mt-5">Новости</h2>
+        <h2 class="mt-5 text-center">Новости</h2>
         <div class="list-group">
-            <a href="#" class="list-group-item list-group-item-action">
+            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 10 февраля — плановое отключение воды на улицах Ленина и Гагарина.
+                <span class="badge bg-primary rounded-pill">Новое</span>
             </a>
-            <a href="#" class="list-group-item list-group-item-action">
+            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 15 февраля — временные ограничения движения в связи с ремонтом дорог.
+                <span class="badge bg-secondary rounded-pill">Актуально</span>
             </a>
-            <a href="#" class="list-group-item list-group-item-action">
+            <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 20 февраля — общегородской субботник. Присоединяйтесь!
+                <span class="badge bg-success rounded-pill">Скоро</span>
             </a>
         </div>
 
         <!-- Раздел контактов -->
-        <h2 class="mt-5">ТЕЛЕФОНЫ ГОРЯЧЕЙ ЛИНИИ</h2>
-        <p><strong>Email:</strong> almet.gor.liniya@mail.ru</p>
-        <p><strong>Исполнительный комитет АМР::</strong> 8(8553) 26-06-00</p>
+        <h2 class="mt-5 text-center">ТЕЛЕФОНЫ ГОРЯЧЕЙ ЛИНИИ</h2>
+        <div class=" card2 bg-light p-4 shadow-sm">
+            <p><strong>Email:</strong> almet.gor.liniya@mail.ru</p>
+            <p><strong>Исполнительный комитет АМР:</strong> 8(8553) 26-06-00</p>
+        </div>
     </div>
+
+    <!-- Стили для улучшения внешнего вида -->
+    <style>
+        /* Общие стили */
+        body {
+            font-family: 'Arial', sans-serif;
+        }
+
+        .jumbotron {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: white;
+        }
+
+        .jumbotron a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .jumbotron a:hover {
+            color: #f8f9fa;
+        }
+
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .card-text {
+            color: #555;
+        }
+
+        .list-group-item {
+            transition: background-color 0.3s ease;
+        }
+
+        .list-group-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .badge {
+            font-size: 0.9rem;
+        }
+
+        .btn-outline-primary {
+            border-width: 2px;
+        }
+
+        .btn-outline-primary:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .alert-info {
+            background-color: #e9f5ff;
+            border-color: #b8e2ff;
+            color: #004085;
+        }
+
+        .bg-light {
+            background-color: #f8f9fa !important;
+        }
+
+        .shadow-sm {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .rounded {
+            border-radius: 10px !important;
+        }
+
+        .dark-theme .card p {
+            color: #b6b8ba;
+        }
+
+        .dark-theme .card2 p {
+            color: #000;
+        }
+
+        .dark-theme .jumbotron p {
+            color: #fff;
+        }
+    </style>
 {% endblock %}
