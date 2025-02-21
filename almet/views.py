@@ -575,7 +575,7 @@ def chat(request, appeal_id):
         sender_name = f"{user.id_citizen.surname} {user.id_citizen.name}"
     elif user.id_sotrudnik:
         # Сотрудник
-        sender_name = f"{user.id_service.name}"
+        sender_name = f"{user.id_sotrudnik.id_service.name}"
     else:
         # Администратор
         sender_name = "Админ"

@@ -75,7 +75,7 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{% url 'admin_view_appeal' appeal.id %}" class="btn btn-primary btn-sm">Просмотреть</a>
+                                <a style="color: #fff;" href="{% url 'admin_view_appeal' appeal.id %}" class="btn btn-primary btn-sm">Просмотреть</a>
                             </td>
                         </tr>
                         {% empty %}
@@ -89,4 +89,16 @@
         </div>
     </div>
 </div>
+
+<style>
+
+    .dark-theme label.form-label {
+        color: #fff;
+    }
+
+    .dark-theme h4 {
+        color: #fff;
+    }
+
+</style>
 {% endblock %}

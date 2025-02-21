@@ -23,7 +23,7 @@
                 <td>{{ appeal.description_problem }}</td>
                 <td>{{ appeal.processing_appeals_set.last.id_status.name_status }}</td>
                 <td>
-                    <a href="{% url 'view_appeal' appeal.id %}" class="btn btn-primary btn-sm">Просмотреть</a>
+                    <a style="color: #fff;" href="{% url 'view_appeal' appeal.id %}" class="btn btn-primary btn-sm">Просмотреть</a>
                 </td>
             </tr>
             {% empty %}
@@ -34,4 +34,6 @@
         </tbody>
     </table>
 </div>
+
+
 {% endblock %}
