@@ -3,8 +3,67 @@
 {% block title %}Профиль{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mt-4">
+            <div class="card-body">
+
+                <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/profile/' %}active{% endif %}" href="{% url 'profile' %}">Профиль</a>
+                        </li>
+                    <!-- Действия для администратора -->
+                    {% if user.is_staff or user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin/' %}active{% endif %}" href="/admin">Админка Django</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_categories/' %}active{% endif %}" href="{% url 'admin_categories' %}">Категории обращений</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_users/' %}active{% endif %}" href="{% url 'admin_users' %}">Все пользователи</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_create_service/' %}active{% endif %}" href="{% url 'admin_create_service' %}">Создать городскую службу</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_create_employee/' %}active{% endif %}" href="{% url 'admin_create_employee' %}">Создать сотрудника городской службы</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_all_appeals/' %}active{% endif %}" href="{% url 'admin_all_appeals' %}">Все обращения</a>
+                        </li>
+                    {% endif %}
+
+                    <!-- Действия для жителя -->
+                    {% if user.id_citizen %}
+                        <li class="nav_item">
+                            <a href="{% url 'update_profile' %}" class="nav-link a_1">Обновить профиль</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/create_appeal/' %}active{% endif %}" href="{% url 'create_appeal' %}">Подать обращение</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/view_appeals/' %}active{% endif %}" href="{% url 'view_appeals' %}">Мои обращения</a>
+                        </li>
+                    {% endif %}
+
+                    <!-- Действия для сотрудника -->
+                    {% if user.id_sotrudnik %}
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/employee_appeals/' %}active{% endif %}" href="{% url 'employee_appeals' %}">Обращения к службе</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/create_report/' %}active{% endif %}" href="{% url 'create_report' %}">Создать отчет</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Левая колонка: Информация о пользователе -->
+    <div class="col-md-8">
         <h2 class="text-center">Профиль пользователя</h2>
         <div class="card mt-4">
             <div class="card-body">
@@ -32,41 +91,61 @@
                     <p>Служба: {{ user.id_sotrudnik.id_service.name }}</p>
                 {% endif %}
 
-                <a href="{% url 'update_profile' %}" class="btn btn-primary">Обновить профиль</a>
-                <a href="{% url 'logout' %}" class="btn btn-danger">Выйти</a>
+                <div class="mt-4">
+                    <a href="{% url 'logout' %}" class="btn btn-danger">Выйти</a>
+                </div>
             </div>
         </div>
-
-        <!-- Действия для администратора -->
-        {% if user.is_staff or user.is_superuser %}
-        <h5>Администратор действия:</h5>
-        <ul class="nav_profile">
-            <li><a href="/admin">Админка Django</a></li>
-            <li><a href="{% url 'admin_categories' %}">Категории обращений</a></li>
-            <li><a href="{% url 'admin_users' %}">Все пользователи</a></li>
-            <li><a href="{% url 'admin_create_service' %}">Создать городскую службу</a></li>
-            <li><a href="{% url 'admin_create_employee' %}">Создать сотрудника городской службы</a></li>
-            <li><a href="{% url 'admin_all_appeals' %}">Все обращения</a></li>
-        </ul>
-        {% endif %}
-
-        <!-- Действия для жителя -->
-        {% if user.id_citizen %}
-            <h5>Жители действия:</h5>
-            <ul>
-                <li><a href="{% url 'create_appeal' %}">Подать обращение</a></li>
-                <li><a href="{% url 'view_appeals' %}">Мои обращения</a></li>
-            </ul>
-        {% endif %}
-
-        <!-- Действия для сотрудника -->
-        {% if user.id_sotrudnik %}
-            <h5>Действия:</h5>
-            <ul>
-                <li><a href="{% url 'employee_appeals' %}">Обращения к службе</a></li>
-                <li><a href="{% url 'create_report' %}">Создать отчет</a></li>
-            </ul>
-        {% endif %}
     </div>
+
+    <!-- Правая колонка: Навигационные ссылки -->
+
 </div>
+
+<style>
+    .nav-link.active {
+        font-weight: bold;
+        color: #007bff !important;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .a_1 {
+        color: #333;
+        padding: 8px 12px;
+        margin: 4px 0;
+        text-decoration: none;
+    }
+
+    .a_1:hover {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    /* Стили для карточки */
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+    }
+
+    /* Центрирование текста */
+    .text-center {
+        text-align: center;
+    }
+
+    /* Отступы */
+    .mt-4 {
+        margin-top: 1.5rem;
+    }
+
+    .mb-3 {
+        margin-bottom: 1rem;
+    }
+
+    .mt-3 {
+        margin-top: 1rem;
+    }
+</style>
 {% endblock %}

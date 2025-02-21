@@ -4,9 +4,66 @@
 
 {% block content %}
 <div class="container mt-5">
-    <div class="row justify-content-center">
+    <div class="row">
+        <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+
+                <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/profile/' %}active{% endif %}" href="{% url 'profile' %}">Профиль</a>
+                        </li>
+                    <!-- Действия для администратора -->
+                    {% if user.is_staff or user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin/' %}active{% endif %}" href="/admin">Админка Django</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_categories/' %}active{% endif %}" href="{% url 'admin_categories' %}">Категории обращений</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_users/' %}active{% endif %}" href="{% url 'admin_users' %}">Все пользователи</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_create_service/' %}active{% endif %}" href="{% url 'admin_create_service' %}">Создать городскую службу</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_create_employee/' %}active{% endif %}" href="{% url 'admin_create_employee' %}">Создать сотрудника городской службы</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/admin_all_appeals/' %}active{% endif %}" href="{% url 'admin_all_appeals' %}">Все обращения</a>
+                        </li>
+                    {% endif %}
+
+                    <!-- Действия для жителя -->
+                    {% if user.id_citizen %}
+                        <li class="nav_item">
+                            <a href="{% url 'update_profile' %}" class="nav-link a_1 {% if request.path == '/update_profile/' %}active{% endif %}">Обновить профиль</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/create_appeal/' %}active{% endif %}" href="{% url 'create_appeal' %}">Подать обращение</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/view_appeals/' %}active{% endif %}" href="{% url 'view_appeals' %}">Мои обращения</a>
+                        </li>
+                    {% endif %}
+
+                    <!-- Действия для сотрудника -->
+                    {% if user.id_sotrudnik %}
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/employee_appeals/' %}active{% endif %}" href="{% url 'employee_appeals' %}">Обращения к службе</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/create_report/' %}active{% endif %}" href="{% url 'create_report' %}">Создать отчет</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
         <div class="col-md-6">
-            <a class="btn btn-primary mb-3" href="{% url 'view_appeals' %}">Посмотреть мои обращения</a>
+            <a style="color: #fff;" class="btn btn-primary mb-3" href="{% url 'view_appeals' %}">Посмотреть мои обращения</a>
             <h2 class="text-center">Подача обращения</h2>
             <form method="post" enctype="multipart/form-data" class="needs-validation mt-4" novalidate>
                 {% csrf_token %}
@@ -43,6 +100,53 @@
         </div>
     </div>
 </div>
+
+<style>
+    .nav-link.active {
+        font-weight: bold;
+        color: #007bff !important;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .a_1 {
+        color: #333;
+        padding: 8px 12px;
+        margin: 4px 0;
+        text-decoration: none;
+    }
+
+    .a_1:hover {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    /* Стили для карточки */
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+    }
+
+    /* Центрирование текста */
+    .text-center {
+        text-align: center;
+    }
+
+    /* Отступы */
+    .mt-4 {
+        margin-top: 1.5rem;
+    }
+
+    .mb-3 {
+        margin-bottom: 1rem;
+    }
+
+    .mt-3 {
+        margin-top: 1rem;
+    }
+</style>
 
 <script>
     function previewImages(event) {

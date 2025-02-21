@@ -24,6 +24,150 @@
             height: auto;    /* сохраняем пропорции */
         }
 
+
+        /* Стили для переключателя темы */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #007bff;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* Закругленный переключатель */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+.slider .icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    transition: opacity 0.4s;
+}
+
+.slider .sun {
+    left: 6px;
+    opacity: 1;
+}
+
+.slider .moon {
+    right: 6px;
+    opacity: 0;
+}
+
+input:checked + .slider .sun {
+    opacity: 0;
+}
+
+input:checked + .slider .moon {
+    opacity: 1;
+}
+
+
+        /* Темная тема */
+            body.dark-theme {
+                background-color: #121212;
+                color: #e0e0e0;
+            }
+
+            .dark-theme .card {
+                background-color: #1e1e1e;
+                border-color: #333;
+            }
+
+            .dark-theme .form-control {
+                background-color: #333;
+                border-color: #444;
+                color: #e0e0e0;
+            }
+
+            .dark-theme .form-control:focus {
+                background-color: #444;
+                border-color: #007bff;
+                color: #e0e0e0;
+            }
+
+            .dark-theme .btn-primary {
+                background-color: #007bff;
+                border-color: #007bff;
+            }
+
+            .dark-theme .btn-primary:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+            }
+
+            .dark-theme a {
+                color: #007bff;
+            }
+
+            .dark-theme p {
+                color: #007bff;
+            }
+
+            .dark-theme a:hover {
+                color: #0056b3;
+            }
+
+            .dark-theme .nav-link {
+                color: #e0e0e0;
+            }
+
+            .dark-theme .nav-link.active {
+                background-color: #333;
+                color: #007bff;
+            }
+
+            .dark-theme .nav-link:hover {
+                background-color: #444;
+            }
+
+            .dark-theme .text-muted {
+                color: #a0a0a0 !important;
+            }
     </style>
 </head>
 <body>
@@ -40,7 +184,14 @@
                         <a class="nav-link" href="{% url 'index' %}">Главная</a>
                     </li>
                 </ul>
-                <ul class="navbar-nav">
+                <ul class="navbar-nav" style="gap: 10px;">
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="slider round">
+                            <span class="icon sun">☀️</span>
+                            <span class="icon moon">🌙</span>
+                        </span>
+                    </label>
                     {% if user.is_authenticated %}
                         <!-- Если пользователь авторизован -->
                         <li class="nav-item">
@@ -82,5 +233,30 @@
 
     <!-- Подключение Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const themeToggle = document.getElementById("theme-toggle");
+            const body = document.body;
+
+            // Проверяем, есть ли сохраненная тема в localStorage
+            const savedTheme = localStorage.getItem("theme");
+            if (savedTheme === "dark") {
+                body.classList.add("dark-theme");
+                themeToggle.checked = true;
+            }
+
+            // Переключение темы
+            themeToggle.addEventListener("change", function() {
+                if (themeToggle.checked) {
+                    body.classList.add("dark-theme");
+                    localStorage.setItem("theme", "dark");
+                } else {
+                    body.classList.remove("dark-theme");
+                    localStorage.setItem("theme", "light");
+                }
+            });
+        });
+    </script>
 </body>
 </html>
