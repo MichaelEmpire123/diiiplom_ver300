@@ -5,7 +5,7 @@
 {% block content %}
     <div class="container">
         <!-- Заголовок и описание -->
-        <div class="jumbotron text-center bg-light mt-4 p-5 rounded shadow">
+        <div class="jumbotron text-center bg-light mt-4 p-5 rounded shadow animate__animated animate__fadeInDown">
             <h1 class="display-4">Добро пожаловать в городской сервис Альметьевска</h1>
             <p class="lead">Здесь вы можете узнать о городских службах, оставить жалобу или предложение.</p>
             <hr class="my-4">
@@ -16,15 +16,15 @@
         <h2 class="mt-5 text-center">Городские службы</h2>
         <div class="row">
             {% for service in services %}
-                <div class="col-md-4 mb-4">
+               <div class="col-md-4 mb-4 animate__animated animate__fadeInUp">
                     <div class="card h-100 shadow-sm">
                         <div class="card-body">
-                            <h5 class="card-title">{{ service.name }}</h5>
+                            <h5 class="card-title"><i class="fas fa-building"></i> {{ service.name }}</h5>
                             <p class="card-text">{{ service.description }}</p>
-                            <p><strong>Телефон:</strong> {{ service.tel }}</p>
+                            <p><strong><i class="fas fa-phone"></i> Телефон:</strong> {{ service.tel }}</p>
                         </div>
                         <div class="card-footer bg-transparent">
-                            <a href="#" class="btn btn-outline-primary">Подробнее</a>
+                            <a href="#" class="btn btn-outline-primary"><i class="fas fa-info-circle"></i> Подробнее</a>
                         </div>
                     </div>
                 </div>
