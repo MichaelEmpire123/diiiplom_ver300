@@ -284,6 +284,24 @@ input:checked + .slider .moon {
                 }
             });
         });
+
+
+        // Функция для установки максимальной даты
+        function setMaxDateForDateInputs() {
+            // Получаем текущую дату в формате YYYY-MM-DD
+            const today = new Date().toISOString().split('T')[0];
+
+            // Находим все поля с типом date
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+
+            // Устанавливаем атрибут max для каждого поля
+            dateInputs.forEach(input => {
+                input.setAttribute('max', today);
+            });
+        }
+
+        // Вызываем функцию при загрузке страницы
+        document.addEventListener('DOMContentLoaded', setMaxDateForDateInputs);
     </script>
 </body>
 </html>
