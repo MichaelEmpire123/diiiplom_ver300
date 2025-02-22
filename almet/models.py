@@ -109,6 +109,7 @@ class Processing_appeals(models.Model):
     id_status = models.ForeignKey('Status', on_delete=models.CASCADE)
     date_time_setting_status = models.DateTimeField()
     photo = models.ImageField(upload_to=get_upload_path_processing, blank=True, null=True)
+    rejection_reason = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Обработка {self.id} для обращения {self.id_appeal}"

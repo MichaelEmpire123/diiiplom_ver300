@@ -22,7 +22,7 @@ from docx.shared import Inches
 from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm, Edit_AppealForm, ReportForm
 from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki, \
     Service
-from django.db.models import OuterRef, Subquery, Q
+from django.db.models import OuterRef, Subquery, Q, Count
 import xml.etree.ElementTree as ET
 from django.utils.timezone import now
 import json
@@ -171,6 +171,68 @@ def logout_view(request):
 
 
 # Городская служба
+
+# Статистика
+@login_required
+def service_statistics(request):
+    if not request.user.id_sotrudnik:
+        messages.error(request, 'У вас нет доступа к этой странице.')
+        return redirect('home')
+
+    # Получаем службу текущего сотрудника
+    service = request.user.id_sotrudnik.id_service
+
+    # Фильтры
+    status_filter = request.GET.get('status')
+    category_filter = request.GET.get('category')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    specific_date = request.GET.get('specific_date')
+
+    # Базовый запрос для обращений
+    appeals = Appeals.objects.filter(id_service=service)
+
+    # Применение фильтров к обращениям
+    if category_filter:
+        appeals = appeals.filter(id_category__id=category_filter)
+    if date_from and date_to:
+        appeals = appeals.filter(date_time__range=[date_from, date_to])
+    if specific_date:
+        appeals = appeals.filter(date_time__date=specific_date)
+
+    # Подзапрос для получения последнего статуса каждого обращения
+    last_status_subquery = Processing_appeals.objects.filter(
+        id_appeal=OuterRef('id')
+    ).order_by('-date_time_setting_status').values('id_status__name_status')[:1]
+
+    # Аннотируем обращения их последним статусом
+    appeals_with_last_status = appeals.annotate(
+        last_status=Subquery(last_status_subquery)
+    )
+
+    # Фильтрация по последнему статусу (если указан фильтр)
+    if status_filter:
+        appeals_with_last_status = appeals_with_last_status.filter(
+            last_status=status_filter)
+
+    # Статистика по последним статусам
+    status_stats = appeals_with_last_status.values('last_status').annotate(
+        total=Count('id')).order_by('-total')
+
+    # Статистика по категориям
+    category_stats = appeals.values('id_category__name_official').annotate(
+        total=Count('id')).order_by('-total')
+
+    # Контекст
+    context = {
+        'status_stats': status_stats,
+        'category_stats': category_stats,
+        'statuses': Status.objects.all(),
+        'categories': Category.objects.all(),
+    }
+
+    return render(request, 'service/service_statistics.html', context)
+
 @login_required
 def employee_appeals(request):
     # Проверяем, что пользователь является сотрудником
@@ -197,24 +259,28 @@ def view_appeal(request, appeal_id):
         messages.error(request, 'У вас нет доступа к этому обращению.')
         return redirect('employee_appeals')
 
-    # Получаем список доступных статусов
+    # Получаем текущий статус обращения
+    current_status = appeal.processing_appeals_set.last().id_status.name_status
+
+    # Получаем список всех статусов, кроме "Принято"
     statuses = Status.objects.exclude(name_status='Принято')
 
-    # Если статус "Отклонено", блокируем изменение статуса
-    if appeal.processing_appeals_set.last().id_status.name_status == 'Отклонено':
-        statuses = statuses.exclude(id__in=[status.id for status in statuses])
-
-    has_in_progress_status = Processing_appeals.objects.filter(
-        id_appeal=appeal,
-        id_status__name_status='В работе'
-    ).exists()
-
-    if has_in_progress_status:
-        statuses = statuses.exclude(name_status='В работе')
-    else:
-        statuses = statuses.exclude(name_status='Выполнено')
+    # Фильтруем доступные статусы в зависимости от текущего статуса
+    if current_status == 'Принято':
+        # Если текущий статус "Принято", доступны "В работе" и "Отклонено"
+        statuses = statuses.filter(name_status__in=['В работе', 'Отклонено'])
+    elif current_status == 'В работе':
+        # Если текущий статус "В работе", доступны "Выполнено" и "Отклонено"
+        statuses = statuses.filter(name_status__in=['Выполнено', 'Отклонено'])
+    elif current_status in ['Выполнено', 'Отклонено']:
+        # Если текущий статус "Выполнено" или "Отклонено", блокируем изменение статуса
+        statuses = statuses.none()  # Пустой queryset, чтобы заблокировать выбор статуса
 
     completed_status_id = Status.objects.filter(name_status='Выполнено').values_list('id', flat=True).first()
+    rejected_status_id = Status.objects.filter(name_status='Отклонено').values_list('id', flat=True).first()
+
+    # Список статусов, которые блокируют форму
+    blocked_statuses = ['Выполнено', 'Отклонено']
 
     if request.method == 'POST':
         new_status_id = request.POST.get('status')
@@ -226,9 +292,9 @@ def view_appeal(request, appeal_id):
                 messages.error(request, 'Для статуса "Выполнено" необходимо загрузить фото.')
                 return redirect('view_appeal', appeal_id=appeal.id)
 
-            # Проверка на изменения статуса при "Отклонено"
-            if new_status.name_status == 'Отклонено':
-                messages.error(request, 'Вы не можете изменить статус на "Отклонено".')
+            # Проверка на статус "Отклонено" и наличие причины
+            if new_status.name_status == 'Отклонено' and not request.POST.get('rejection_reason'):
+                messages.error(request, 'Для статуса "Отклонено" необходимо указать причину.')
                 return redirect('view_appeal', appeal_id=appeal.id)
 
             # Создаем запись о статусе
@@ -236,6 +302,7 @@ def view_appeal(request, appeal_id):
                 id_appeal=appeal,
                 id_status=new_status,
                 date_time_setting_status=timezone.now(),
+                rejection_reason=request.POST.get('rejection_reason', ''),  # Сохраняем причину отклонения
             )
 
             # Если прикреплен файл, сохраняем его
@@ -257,6 +324,8 @@ def view_appeal(request, appeal_id):
         'statuses': statuses,
         'status_history': status_history,
         'completed_status_id': completed_status_id,
+        'rejected_status_id': rejected_status_id,
+        'blocked_statuses': blocked_statuses,  # Передаем список блокирующих статусов
     })
 
 
@@ -1160,6 +1229,71 @@ def admin_view_appeal(request, appeal_id):
         'services': services,
     })
 
+# Статистика у админа
+@login_required
+def admin_statistics(request):
+    if not request.user.is_staff:
+        messages.error(request, 'У вас нет доступа к этой странице.')
+        return redirect('home')
 
+    # Фильтры
+    status_filter = request.GET.get('status')
+    category_filter = request.GET.get('category')
+    service_filter = request.GET.get('service')  # Новый фильтр по службе
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    specific_date = request.GET.get('specific_date')
+
+    # Базовый запрос для обращений
+    appeals = Appeals.objects.all()
+
+    # Применение фильтров к обращениям
+    if category_filter:
+        appeals = appeals.filter(id_category__id=category_filter)
+    if service_filter:  # Фильтр по службе
+        appeals = appeals.filter(id_service__id=service_filter)
+    if date_from and date_to:
+        appeals = appeals.filter(date_time__range=[date_from, date_to])
+    if specific_date:
+        appeals = appeals.filter(date_time__date=specific_date)
+
+    # Подзапрос для получения последнего статуса каждого обращения
+    last_status_subquery = Processing_appeals.objects.filter(
+        id_appeal=OuterRef('id')
+    ).order_by('-date_time_setting_status').values('id_status__name_status')[:1]
+
+    # Аннотируем обращения их последним статусом
+    appeals_with_last_status = appeals.annotate(
+        last_status=Subquery(last_status_subquery)
+    )
+
+    # Фильтрация по последнему статусу (если указан фильтр)
+    if status_filter:
+        appeals_with_last_status = appeals_with_last_status.filter(
+            last_status=status_filter)
+
+    # Статистика по службам
+    service_stats = appeals_with_last_status.values('id_service__name').annotate(
+        total=Count('id')).order_by('-total')
+
+    # Статистика по последним статусам
+    status_stats = appeals_with_last_status.values('last_status').annotate(
+        total=Count('id')).order_by('-total')
+
+    # Статистика по категориям
+    category_stats = appeals.values('id_category__name_official').annotate(
+        total=Count('id')).order_by('-total')
+
+    # Контекст
+    context = {
+        'service_stats': service_stats,
+        'status_stats': status_stats,
+        'category_stats': category_stats,
+        'statuses': Status.objects.all(),
+        'categories': Category.objects.all(),
+        'services': Service.objects.all(),  # Добавляем список всех служб
+    }
+
+    return render(request, 'admin/admin_statistics.html', context)
 
 

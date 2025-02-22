@@ -17,7 +17,7 @@
             <!-- Ссылка на чат для городской службы -->
             <div class="mb-4">
                 <h5>Чат с гражданином</h5>
-                <a <a style="color: #fff;" href="{% url 'chat' appeal.id %}" class="btn btn-info">Перейти в чат</a>
+                <a style="color: #fff;" href="{% url 'chat' appeal.id %}" class="btn btn-info">Перейти в чат</a>
             </div>
 
             <div class="text-center mb-4">
@@ -49,7 +49,7 @@
                 {% csrf_token %}
                 <div class="mb-3">
                     <label for="status" class="form-label">Новый статус</label>
-                    <select name="status" id="status" class="form-select" {% if appeal.processing_appeals_set.last.id_status.name_status == 'Отклонено' %}disabled{% endif %} required>
+                    <select name="status" id="status" class="form-select" {% if appeal.processing_appeals_set.last.id_status.name_status in blocked_statuses %}disabled{% endif %} required>
                         <option value="" disabled selected>Выберите статус обращения</option>
                         {% for status in statuses %}
                             <option value="{{ status.id }}"
@@ -64,7 +64,12 @@
                     <label for="photo" class="form-label">Прикрепить фото для отчета</label>
                     <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
                 </div>
-                <button type="submit" class="btn btn-primary">Изменить статус</button>
+                <!-- Поле для причины отклонения (скрыто по умолчанию) -->
+                <div class="mb-3" id="rejection-reason-field" style="display: none;">
+                    <label for="rejection_reason" class="form-label">Причина отклонения</label>
+                    <textarea class="form-control" id="rejection_reason" name="rejection_reason" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" {% if appeal.processing_appeals_set.last.id_status.name_status in blocked_statuses %}disabled{% endif %}>Изменить статус</button>
             </form>
         </div>
     </div>
@@ -78,6 +83,7 @@
                     <tr>
                         <th>Статус</th>
                         <th>Дата и время</th>
+                        <th>Причина отклонения</th>  <!-- Новый столбец -->
                     </tr>
                 </thead>
                 <tbody>
@@ -85,10 +91,11 @@
                     <tr>
                         <td>{{ history.id_status.name_status }}</td>
                         <td>{{ history.date_time_setting_status }}</td>
+                        <td>{{ history.rejection_reason|default:"" }}</td>  <!-- Причина отклонения -->
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="2" class="text-center">История статусов отсутствует.</td>
+                        <td colspan="3" class="text-center">История статусов отсутствует.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -110,13 +117,21 @@
 </style>
 
 <script>
-    // Показываем поле для загрузки фото, если выбран статус "Выполнено"
     document.getElementById('status').addEventListener('change', function() {
         const photoField = document.getElementById('photo-field');
-        if (this.value === "{{ completed_status_id }}") {  // Используем переданный ID
+        const rejectionReasonField = document.getElementById('rejection-reason-field');
+        const completedStatusId = "{{ completed_status_id }}";  // ID статуса "Выполнено"
+        const rejectedStatusId = "{{ rejected_status_id }}";    // ID статуса "Отклонено"
+
+        if (this.value === completedStatusId) {
             photoField.style.display = 'block';
+            rejectionReasonField.style.display = 'none';
+        } else if (this.value === rejectedStatusId) {
+            rejectionReasonField.style.display = 'block';
+            photoField.style.display = 'none';
         } else {
             photoField.style.display = 'none';
+            rejectionReasonField.style.display = 'none';
         }
     });
 </script>

@@ -27,6 +27,8 @@ urlpatterns = [
     path('employee/appeals/', views.employee_appeals, name='employee_appeals'),
     path('employee/appeals/<int:appeal_id>/', views.view_appeal, name='view_appeal'),
     path('employee/create-report/', views.create_report, name='create_report'),
+    path('employee/statistics/', views.service_statistics, name='service_statistics'),
+
 
     # Администратор
     path('administrator/categories/', views.admin_categories, name='admin_categories'),
@@ -41,8 +43,8 @@ urlpatterns = [
     path('administrator/create_employee/', views.admin_create_employee, name='admin_create_employee'),
     path('administrator/all_appeals/', views.admin_all_appeals, name='admin_all_appeals'),
     path('administrator/all_appeals/<int:appeal_id>/', views.admin_view_appeal, name='admin_view_appeal'),
-
-    path('administrator/assign_service/<int:appeal_id>/', views.assign_service, name='assign_service')
+    path('administrator/assign_service/<int:appeal_id>/', views.assign_service, name='assign_service'),
+    path('administrator/statistics/', views.admin_statistics, name='admin_statistics'),
 ]
 
 

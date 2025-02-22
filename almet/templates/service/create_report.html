@@ -6,7 +6,7 @@
 <div class="row container">
     <div class="col-md-4">
         <div class="card mt-4">
-            <div class="card-body" style="padding:20px;">
+            <div class="card-body">
 
                 <ul class="nav flex-column">
                         <li class="nav-item">
@@ -32,15 +32,15 @@
                         <li class="nav-item">
                             <a class="nav-link a_1 {% if request.path == '/admin_all_appeals/' %}active{% endif %}" href="{% url 'admin_all_appeals' %}">Все обращения</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/administrator/statistics/' %}active{% endif %}" href="{% url 'admin_statistics' %}">Статистика</a>
+                        </li>
                     {% endif %}
 
                     <!-- Действия для жителя -->
                     {% if user.id_citizen %}
                         <li class="nav_item">
-                            <a href="{% url 'update_profile' %}" class="nav-link a_1 {% if request.path == '/update_profile/' %}active{% endif %}">Обновить профиль</a>
-                        </li>
-                        <li class="nav_item">
-                            <a href="{% url 'change_password' %}" class="nav-link a_1 {% if request.path == '/change_password/' %}active{% endif %}">Сменить пароль</a>
+                            <a href="{% url 'update_profile' %}" class="nav-link a_1">Обновить профиль</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link a_1 {% if request.path == '/create_appeal/' %}active{% endif %}" href="{% url 'create_appeal' %}">Подать обращение</a>
@@ -56,7 +56,10 @@
                             <a class="nav-link a_1 {% if request.path == '/employee_appeals/' %}active{% endif %}" href="{% url 'employee_appeals' %}">Обращения к службе</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link a_1 {% if request.path == '/employee/create-report/' %}active{% endif %}" href="{% url 'create_report' %}">Создать отчет</a>
+                            <a class="nav-link a_1 {% if request.path == '/create_report/' %}active{% endif %}" href="{% url 'create_report' %}">Создать отчет</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link a_1 {% if request.path == '/employee/statistics/' %}active{% endif %}" href="{% url 'service_statistics' %}">Статистика</a>
                         </li>
                     {% endif %}
                 </ul>
