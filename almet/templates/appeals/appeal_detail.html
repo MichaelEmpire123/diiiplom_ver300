@@ -46,7 +46,7 @@
 
                     <div class="mb-4">
                         <h5>Чат с гражданином</h5>
-                        <a href="{% url 'chat' appeal.id %}" class="btn btn-info">Перейти в чат</a>
+                        <a style="color: #fff;" href="{% url 'chat' appeal.id %}" class="btn btn-info">Перейти в чат</a>
                     </div>
 
                     <!-- История статусов -->
@@ -78,7 +78,7 @@
                     <!-- Кнопки редактирования и удаления, если статус "Принято" -->
                     {% if latest_status == "Принято" %}
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'edit_appeal' appeal.id %}" class="btn btn-warning">Редактировать</a>
+                            <a style="color: #fff;" href="{% url 'edit_appeal' appeal.id %}" class="btn btn-warning">Редактировать</a>
 
                             <form method="post" action="{% url 'delete_appeal' appeal.id %}">
                                 {% csrf_token %}
@@ -89,7 +89,7 @@
 
                     <!-- Кнопка "Назад" -->
                     <div class="text-center mt-4">
-                        <a href="{% url 'view_appeals' %}" class="btn btn-secondary">Назад</a>
+                        <a style="color: #fff;" href="{% url 'view_appeals' %}" class="btn btn-secondary">Назад</a>
                     </div>
                 </div>
             </div>
