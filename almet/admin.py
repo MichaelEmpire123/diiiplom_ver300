@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     City, Street, Citizen, Service, Sotrudniki,
     Category, Status, Appeals, Processing_appeals,
-    Message, User
+    Message, User, ChatCommand, CannedResponse
 )
 
 @admin.register(City)
@@ -56,3 +56,13 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ('id', 'email', 'id_citizen', 'id_sotrudnik', 'is_active', 'is_staff')
     search_fields = ('email',)
     list_filter = ('id_citizen', 'id_sotrudnik', 'is_active', 'is_staff')
+
+@admin.register(ChatCommand)
+class ChatCommandAdmin(admin.ModelAdmin):
+    list_display = ('command', 'description')
+    search_fields = ('command',)
+
+@admin.register(CannedResponse)
+class CannedResponseAdmin(admin.ModelAdmin):
+    list_display = ('command', 'response_text')
+    search_fields = ('command__command', 'response_text')

@@ -163,3 +163,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class ChatCommand(models.Model):
+    command = models.CharField(max_length=50, unique=True)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.command
+
+class CannedResponse(models.Model):
+    command = models.ForeignKey(ChatCommand, on_delete=models.CASCADE)
+    response_text = models.TextField()
