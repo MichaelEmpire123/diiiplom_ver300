@@ -93,7 +93,6 @@ def register_view(request):
     if request.user.is_authenticated:
         return redirect('profile')  # Замените 'profile' на нужный URL
 
-
     if request.method == 'GET':
         # Рендерим страницу регистрации для GET-запросов
         return render(request, 'auth/register.html')
@@ -132,6 +131,22 @@ def register_view(request):
 
         if patronymic and not re.match(pattern, patronymic):  # Отчество может быть пустым
             return JsonResponse({'success': False, 'message': 'Отчество должно содержать только русские буквы.'})
+
+        # Проверка сложности пароля
+        if len(password) < 8:
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать не менее 8 символов.'})
+
+        if not re.search(r'[A-Z]', password):
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать хотя бы одну заглавную букву.'})
+
+        if not re.search(r'[a-z]', password):
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать хотя бы одну строчную букву.'})
+
+        if not re.search(r'[0-9]', password):
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать хотя бы одну цифру.'})
+
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать хотя бы один специальный символ.'})
 
         # Создаем пользователя и запись в таблице Citizen
         try:

@@ -40,7 +40,7 @@
                     <!-- Действия для жителя -->
                     {% if user.id_citizen %}
                         <li class="nav_item">
-                            <a href="{% url 'update_profile' %}" class="nav-link a_1">Обновить профиль</a>
+                            <a class="nav-link a_1 {% if request.path == '/update_profile/' %}active{% endif %}" href="{% url 'update_profile' %}">Обновить профиль</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link a_1 {% if request.path == '/create_appeal/' %}active{% endif %}" href="{% url 'create_appeal' %}">Подать обращение</a>

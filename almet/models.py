@@ -120,10 +120,10 @@ class Message(models.Model):
     id_appeals = models.ForeignKey(Appeals, on_delete=models.CASCADE)
     message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    sender = models.ForeignKey('User', on_delete=models.CASCADE, null=True)  # Сделать nullable
+    sender = models.ForeignKey('User', on_delete=models.CASCADE, null=True)
     image = models.ImageField(upload_to='chat_images/', blank=True, null=True)
-    is_edited = models.BooleanField(default=False)  # Новое поле
-    is_deleted = models.BooleanField(default=False)  # Для удаления
+    is_edited = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
 
 

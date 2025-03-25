@@ -20,7 +20,7 @@ class CitizenAdmin(admin.ModelAdmin):
     list_filter = ('id_city', 'id_street')
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'id_city', 'id_street', 'house', 'flat', 'tel', 'description')
+    list_display = ('id', 'name', 'id_city', 'id_street', 'house', 'flat', 'tel')
     search_fields = ('name', 'tel')
     list_filter = ('id_city', 'id_street')
 @admin.register(Sotrudniki)
