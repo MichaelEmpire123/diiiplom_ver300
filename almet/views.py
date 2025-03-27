@@ -262,8 +262,6 @@ def employee_appeals(request):
     return render(request, 'service/appeals_service.html', {'appeals': appeals})
 
 
-
-
 @login_required
 def view_appeal(request, appeal_id):
     """Просмотр и изменение статуса обращения"""
@@ -282,19 +280,14 @@ def view_appeal(request, appeal_id):
 
     # Фильтруем доступные статусы в зависимости от текущего статуса
     if current_status == 'Принято':
-        # Если текущий статус "Принято", доступны "В работе" и "Отклонено"
         statuses = statuses.filter(name_status__in=['В работе', 'Отклонено'])
     elif current_status == 'В работе':
-        # Если текущий статус "В работе", доступны "Выполнено" и "Отклонено"
         statuses = statuses.filter(name_status__in=['Выполнено', 'Отклонено'])
     elif current_status in ['Выполнено', 'Отклонено']:
-        # Если текущий статус "Выполнено" или "Отклонено", блокируем изменение статуса
-        statuses = statuses.none()  # Пустой queryset, чтобы заблокировать выбор статуса
+        statuses = statuses.none()
 
     completed_status_id = Status.objects.filter(name_status='Выполнено').values_list('id', flat=True).first()
     rejected_status_id = Status.objects.filter(name_status='Отклонено').values_list('id', flat=True).first()
-
-    # Список статусов, которые блокируют форму
     blocked_statuses = ['Выполнено', 'Отклонено']
 
     if request.method == 'POST':
@@ -302,10 +295,21 @@ def view_appeal(request, appeal_id):
         if new_status_id:
             new_status = get_object_or_404(Status, id=new_status_id)
 
-            # Проверка на статус "Выполнено" и наличие фото
-            if new_status.name_status == 'Выполнено' and not request.FILES.get('photo'):
-                messages.error(request, 'Для статуса "Выполнено" необходимо загрузить фото.')
-                return redirect('view_appeal', appeal_id=appeal.id)
+            # Проверка на статус "Выполнено"
+            if new_status.name_status == 'Выполнено':
+                # Проверяем наличие фото
+                if not request.FILES.get('photo'):
+                    messages.error(request, 'Для статуса "Выполнено" необходимо загрузить фото.')
+                    return redirect('view_appeal', appeal_id=appeal.id)
+
+                # Проверяем, что загруженный файл является изображением
+                uploaded_file = request.FILES.get('photo')
+                if uploaded_file:
+                    allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp']
+                    if uploaded_file.content_type not in allowed_types:
+                        messages.error(request,
+                                       'Пожалуйста, загрузите файл изображения (JPEG, PNG, GIF или BMP).')
+                        return redirect('view_appeal', appeal_id=appeal.id)
 
             # Проверка на статус "Отклонено" и наличие причины
             if new_status.name_status == 'Отклонено' and not request.POST.get('rejection_reason'):
@@ -317,11 +321,11 @@ def view_appeal(request, appeal_id):
                 id_appeal=appeal,
                 id_status=new_status,
                 date_time_setting_status=timezone.now(),
-                rejection_reason=request.POST.get('rejection_reason', ''),  # Сохраняем причину отклонения
+                rejection_reason=request.POST.get('rejection_reason', ''),
             )
 
-            # Если прикреплен файл, сохраняем его
-            if 'photo' in request.FILES:
+            # Если прикреплен файл, сохраняем его (только если это изображение)
+            if 'photo' in request.FILES and new_status.name_status == 'Выполнено':
                 processing.photo = request.FILES['photo']
                 processing.save()
 
@@ -340,7 +344,7 @@ def view_appeal(request, appeal_id):
         'status_history': status_history,
         'completed_status_id': completed_status_id,
         'rejected_status_id': rejected_status_id,
-        'blocked_statuses': blocked_statuses,  # Передаем список блокирующих статусов
+        'blocked_statuses': blocked_statuses,
     })
 
 
