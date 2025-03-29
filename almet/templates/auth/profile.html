@@ -52,6 +52,9 @@
 
                     <!-- Действия для сотрудника -->
                     {% if user.id_sotrudnik %}
+                        <li class="nav_item">
+                            <a class="nav-link a_1 {% if request.path == '/update_profile/' %}active{% endif %}" href="{% url 'update_profile' %}">Обновить профиль</a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link a_1 {% if request.path == '/employee_appeals/' %}active{% endif %}" href="{% url 'employee_appeals' %}">Обращения к службе</a>
                         </li>

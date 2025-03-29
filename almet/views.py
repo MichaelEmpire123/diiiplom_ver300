@@ -28,6 +28,10 @@ from django.utils.timezone import now
 import json
 from channels.layers import get_channel_layer
 
+def validate_cyrillic(text):
+    """Проверяет, содержит ли текст только кириллические буквы, пробелы и дефисы"""
+    return bool(re.fullmatch(r'^[А-Яа-яЁё\s-]+$', text))
+
 def index(request):
     # Получаем все службы
     services = Service.objects.all()
@@ -423,64 +427,116 @@ def create_report(request):
 def validate_cyrillic(text):
     return bool(re.fullmatch(r'^[А-ЯЁа-яё\s-]+$', text))
 
+
+# Обновление данных пользователя
 @login_required
 def update_profile(request):
     user = request.user
-    citizen = user.id_citizen
 
     if request.method == 'POST':
-        surname = request.POST.get('surname', '').strip()
-        name = request.POST.get('name', '').strip()
-        patronymic = request.POST.get('patronymic', '').strip()
-        tel = request.POST.get('tel', '').strip()
-        email = request.POST.get('email', '').strip()
-        city_name = request.POST.get('city', '').strip()
-        street_name = request.POST.get('street', '').strip()
-        house = request.POST.get('house', '').strip()
-        flat = request.POST.get('flat', '').strip()
+        # Для жителей
+        if user.id_citizen:
+            return handle_citizen_update(request, user)
+        # Для сотрудников
+        elif user.id_sotrudnik:
+            return handle_employee_update(request, user)
+        else:
+            messages.error(request, 'Неизвестный тип пользователя.')
+            return redirect('update_profile')
 
-        # Проверка ФИО (только кириллица)
-        if not validate_cyrillic(surname) or not validate_cyrillic(name) or (patronymic and not validate_cyrillic(patronymic)):
-            messages.error(request, 'Фамилия, имя и отчество должны содержать только кириллические буквы.')
-            return render(request, 'auth/update_profile.html')
+    # Для GET запроса
+    return render_update_profile_page(request, user)
 
-        # Обновление данных
-        citizen.surname = surname
-        citizen.name = name
-        citizen.patronymic = patronymic
-        citizen.tel = tel
-        citizen.email = email
-        citizen.house = house
-        citizen.flat = flat if flat else None
 
-        if city_name:
-            city, _ = City.objects.get_or_create(name_city=city_name)
-            citizen.id_city = city
-        if street_name:
-            street, _ = Street.objects.get_or_create(name_street=street_name)
-            citizen.id_street = street
+def handle_citizen_update(request, user):
+    citizen = user.id_citizen
+    surname = request.POST.get('surname', '').strip()
+    name = request.POST.get('name', '').strip()
+    patronymic = request.POST.get('patronymic', '').strip()
+    tel = request.POST.get('tel', '').strip()
+    email = request.POST.get('email', '').strip()
+    city_name = request.POST.get('city', '').strip()
+    street_name = request.POST.get('street', '').strip()
+    house = request.POST.get('house', '').strip()
+    flat = request.POST.get('flat', '').strip()
 
-        citizen.save()
+    # Проверка ФИО (только кириллица)
+    if not validate_cyrillic(surname) or not validate_cyrillic(name) or (
+            patronymic and not validate_cyrillic(patronymic)):
+        messages.error(request, 'Фамилия, имя и отчество должны содержать только кириллические буквы.')
+        return redirect('update_profile')
 
-        # Обработка смены пароля
-        password = request.POST.get('password', '').strip()
-        password_confirm = request.POST.get('password_confirm', '').strip()
+    # Обновление данных
+    citizen.surname = surname
+    citizen.name = name
+    citizen.patronymic = patronymic
+    citizen.tel = tel
+    citizen.email = email
+    citizen.house = house
+    citizen.flat = flat if flat else None
 
-        if password and password == password_confirm:
-            # Если оба пароля совпадают, меняем пароль
-            user.set_password(password)
-            user.save()
-            update_session_auth_hash(request, user)  # Обновляем сессию, чтобы пользователь оставался авторизованным
+    if city_name:
+        city, _ = City.objects.get_or_create(name_city=city_name)
+        citizen.id_city = city
+    if street_name:
+        street, _ = Street.objects.get_or_create(name_street=street_name)
+        citizen.id_street = street
 
-            # Выход из аккаунта после смены пароля
-            logout(request)
-            messages.success(request, 'Пароль был успешно изменён. Пожалуйста, войдите снова.')
-            return redirect('login')  # Перенаправляем на страницу входа
+    citizen.save()
+    messages.success(request, 'Профиль успешно обновлён.')
+    return redirect('update_profile')
 
-        messages.success(request, 'Профиль успешно обновлён.')
 
-    return render(request, 'auth/update_profile.html')
+def handle_employee_update(request, user):
+    employee = user.id_sotrudnik
+    surname = request.POST.get('surname', '').strip()
+    name = request.POST.get('name', '').strip()
+    patronymic = request.POST.get('patronymic', '').strip()
 
+    # Проверка ФИО (только кириллица)
+    if not validate_cyrillic(surname) or not validate_cyrillic(name) or (
+            patronymic and not validate_cyrillic(patronymic)):
+        messages.error(request, 'Фамилия, имя и отчество должны содержать только кириллические буквы.')
+        return redirect('update_profile')
+
+    # Обновление данных сотрудника
+    employee.surname = surname
+    employee.name = name
+    employee.patronymic = patronymic
+    employee.save()
+
+    messages.success(request, 'Профиль успешно обновлён.')
+    return redirect('update_profile')
+
+
+def render_update_profile_page(request, user):
+    context = {}
+
+    if user.id_citizen:
+        context['is_citizen'] = True
+        context['profile_data'] = {
+            'surname': user.id_citizen.surname,
+            'name': user.id_citizen.name,
+            'patronymic': user.id_citizen.patronymic,
+            'tel': user.id_citizen.tel,
+            'email': user.id_citizen.email,
+            'city': user.id_citizen.id_city.name_city if user.id_citizen.id_city else '',
+            'street': user.id_citizen.id_street.name_street if user.id_citizen.id_street else '',
+            'house': user.id_citizen.house,
+            'flat': user.id_citizen.flat,
+        }
+    elif user.id_sotrudnik:
+        context['is_employee'] = True
+        context['profile_data'] = {
+            'surname': user.id_sotrudnik.surname,
+            'name': user.id_sotrudnik.name,
+            'patronymic': user.id_sotrudnik.patronymic,
+        }
+
+    return render(request, 'auth/update_profile.html', context)
+# ______________________________
+
+# Смена пароля
 @login_required
 def change_password(request):
     if request.method == 'POST':
@@ -488,19 +544,36 @@ def change_password(request):
         new_password = request.POST.get('new_password')
         confirm_password = request.POST.get('confirm_password')
 
+        # Проверка старого пароля
         if not request.user.check_password(old_password):
-            messages.error(request, 'Старый пароль введен неверно.')
-            return redirect('change_password')
+            return JsonResponse({'success': False, 'message': 'Старый пароль введен неверно.'})
 
+        # Проверка совпадения новых паролей
         if new_password != confirm_password:
-            messages.error(request, 'Новые пароли не совпадают.')
-            return redirect('change_password')
+            return JsonResponse({'success': False, 'message': 'Новые пароли не совпадают.'})
 
+        # Проверка сложности нового пароля
+        if len(new_password) < 8:
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать не менее 8 символов.'})
+
+        if not re.search(r'[A-ZА-Я]', new_password):
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать хотя бы одну заглавную букву.'})
+
+        if not re.search(r'[a-zа-я]', new_password):
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать хотя бы одну строчную букву.'})
+
+        if not re.search(r'[0-9]', new_password):
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать хотя бы одну цифру.'})
+
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password):
+            return JsonResponse({'success': False, 'message': 'Пароль должен содержать хотя бы один специальный символ.'})
+
+        # Если все проверки пройдены - меняем пароль
         request.user.set_password(new_password)
         request.user.save()
-        update_session_auth_hash(request, request.user)  # Обновляем сессию, чтобы пользователь оставался авторизованным
+        update_session_auth_hash(request, request.user)
 
-        messages.success(request, 'Пароль успешно изменен.')
+        return JsonResponse({'success': True, 'message': 'Пароль успешно изменен!'})
 
     return render(request, 'auth/change_password.html')
 

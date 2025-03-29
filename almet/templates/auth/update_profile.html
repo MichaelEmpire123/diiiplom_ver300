@@ -52,6 +52,9 @@
 
                     <!-- Действия для сотрудника -->
                     {% if user.id_sotrudnik %}
+                        <li class="nav_item">
+                            <a class="nav-link a_1 {% if request.path == '/update_profile/' %}active{% endif %}" href="{% url 'update_profile' %}">Обновить профиль</a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link a_1 {% if request.path == '/employee_appeals/' %}active{% endif %}" href="{% url 'employee_appeals' %}">Обращения к службе</a>
                         </li>
@@ -72,47 +75,64 @@
         <h2 class="text-center mb-4">Обновление профиля</h2>
         <form method="post" action="{% url 'update_profile' %}" class="mt-4">
             {% csrf_token %}
+
+            <!-- Общие поля для всех пользователей -->
             <div class="mb-3">
                 <label for="surname" class="form-label">Фамилия</label>
-                <input type="text" class="form-control" id="surname" name="surname" value="{{ user.id_citizen.surname }}">
+                <input type="text" class="form-control" id="surname" name="surname"
+                       value="{{ profile_data.surname|default:'' }}" required>
             </div>
             <div class="mb-3">
                 <label for="name" class="form-label">Имя</label>
-                <input type="text" class="form-control" id="name" name="name" value="{{ user.id_citizen.name }}">
+                <input type="text" class="form-control" id="name" name="name"
+                       value="{{ profile_data.name|default:'' }}" required>
             </div>
             <div class="mb-3">
                 <label for="patronymic" class="form-label">Отчество</label>
-                <input type="text" class="form-control" id="patronymic" name="patronymic" value="{{ user.id_citizen.patronymic }}">
+                <input type="text" class="form-control" id="patronymic" name="patronymic"
+                       value="{{ profile_data.patronymic|default:'' }}">
             </div>
-            <div class="mb-3">
-                <label for="tel" class="form-label">Телефон</label>
-                <input type="text" class="form-control" id="tel" name="tel" value="{{ user.id_citizen.tel }}">
-            </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" value="{{ user.id_citizen.email }}">
-            </div>
-            <div class="mb-3">
-                <label for="city" class="form-label">Город</label>
-                <input type="text" class="form-control" id="city" name="city" value="{{ user.id_citizen.id_city.name_city|default:'' }}">
-            </div>
-            <div class="mb-3">
-                <label for="street" class="form-label">Улица</label>
-                <input type="text" class="form-control" id="street" name="street" value="{{ user.id_citizen.id_street.name_street|default:'' }}">
-            </div>
-            <div class="mb-3">
-                <label for="house" class="form-label">Дом</label>
-                <input type="text" class="form-control" id="house" name="house" value="{{ user.id_citizen.house|default:'' }}">
-            </div>
-            <div class="mb-3">
-                <label for="flat" class="form-label">Квартира</label>
-                <input type="text" class="form-control" id="flat" name="flat" value="{{ user.id_citizen.flat|default:'' }}">
-            </div>
+
+            <!-- Поля только для жителей -->
+            {% if is_citizen %}
+                <div class="mb-3">
+                    <label for="tel" class="form-label">Телефон</label>
+                    <input type="text" class="form-control" id="tel" name="tel"
+                           value="{{ profile_data.tel|default:'' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email"
+                           value="{{ profile_data.email|default:'' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="city" class="form-label">Город</label>
+                    <input type="text" class="form-control" id="city" name="city"
+                           value="{{ profile_data.city|default:'' }}">
+                </div>
+                <div class="mb-3">
+                    <label for="street" class="form-label">Улица</label>
+                    <input type="text" class="form-control" id="street" name="street"
+                           value="{{ profile_data.street|default:'' }}">
+                </div>
+                <div class="mb-3">
+                    <label for="house" class="form-label">Дом</label>
+                    <input type="text" class="form-control" id="house" name="house"
+                           value="{{ profile_data.house|default:'' }}">
+                </div>
+                <div class="mb-3">
+                    <label for="flat" class="form-label">Квартира</label>
+                    <input type="text" class="form-control" id="flat" name="flat"
+                           value="{{ profile_data.flat|default:'' }}">
+                </div>
+            {% endif %}
 
             <button type="submit" class="btn btn-primary w-100">Сохранить</button>
         </form>
 
+
         <p class="text-center mt-3">Хотите сменить пароль? <a href="{% url 'change_password' %}">Сменить пароль</a></p>
+
     </div>
 </div>
 
