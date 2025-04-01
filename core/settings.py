@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'almet',
+    'bootstrap5',
 ]
 
 ASGI_APPLICATION = 'core.asgi.application'
