@@ -57,6 +57,7 @@
                                 <tr>
                                     <th>Статус</th>
                                     <th>Дата изменения</th>
+                                    <th>Причина отклонения</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -64,7 +65,7 @@
                                 <tr>
                                     <td>{{ status.id_status.name_status }}</td>
                                     <td>{{ status.date_time_setting_status }}</td>
-
+                                    <td>{{ status.rejection_reason|default:"" }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
