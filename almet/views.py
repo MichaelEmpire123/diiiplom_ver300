@@ -22,7 +22,7 @@ from docx.shared import Inches
 from .forms import AppealForm, MessageForm, ServiceForm, EmployeeRegistrationForm, Edit_AppealForm, ReportForm
 from .models import User, Citizen, Street, City, Status, Appeals, Message, Processing_appeals, Category, Sotrudniki, \
     Service
-from django.db.models import OuterRef, Subquery, Q, Count
+from django.db.models import Max, OuterRef, Subquery, Q, Count
 import xml.etree.ElementTree as ET
 from django.utils.timezone import now
 import json
@@ -198,7 +198,6 @@ def service_statistics(request):
         messages.error(request, 'У вас нет доступа к этой странице.')
         return redirect('home')
 
-    # Получаем службу текущего сотрудника
     service = request.user.id_sotrudnik.id_service
 
     # Фильтры
@@ -208,10 +207,10 @@ def service_statistics(request):
     date_to = request.GET.get('date_to')
     specific_date = request.GET.get('specific_date')
 
-    # Базовый запрос для обращений
+    # Базовый запрос для обращений службы
     appeals = Appeals.objects.filter(id_service=service)
 
-    # Применение фильтров к обращениям
+    # Применение фильтров
     if category_filter:
         appeals = appeals.filter(id_category__id=category_filter)
     if date_from and date_to:
@@ -219,30 +218,41 @@ def service_statistics(request):
     if specific_date:
         appeals = appeals.filter(date_time__date=specific_date)
 
-    # Подзапрос для получения последнего статуса каждого обращения
-    last_status_subquery = Processing_appeals.objects.filter(
+    # Создаем подзапрос для получения последних статусов
+    latest_status_subquery = Processing_appeals.objects.filter(
         id_appeal=OuterRef('id')
-    ).order_by('-date_time_setting_status').values('id_status__name_status')[:1]
+    ).order_by('-date_time_setting_status').values('id_status')[:1]
 
-    # Аннотируем обращения их последним статусом
+    # Аннотируем обращения последним статусом
     appeals_with_last_status = appeals.annotate(
-        last_status=Subquery(last_status_subquery)
+        last_status_id=Subquery(latest_status_subquery)
+    ).annotate(
+        last_status_name=Subquery(
+            Status.objects.filter(id=OuterRef('last_status_id'))
+            .values('name_status')[:1]
+        )
     )
 
     # Фильтрация по последнему статусу (если указан фильтр)
     if status_filter:
         appeals_with_last_status = appeals_with_last_status.filter(
-            last_status=status_filter)
+            last_status_id=status_filter)
 
-    # Статистика по последним статусам
-    status_stats = appeals_with_last_status.values('last_status').annotate(
+    # Статистика по статусам
+    status_stats = appeals_with_last_status.values('last_status_name').annotate(
         total=Count('id')).order_by('-total')
 
     # Статистика по категориям
     category_stats = appeals.values('id_category__name_official').annotate(
         total=Count('id')).order_by('-total')
 
-    # Контекст
+    # Рассчитываем проценты
+    total_appeals = appeals.count()
+    for stat in status_stats:
+        stat['percentage'] = (stat['total'] / total_appeals * 100) if total_appeals else 0
+    for stat in category_stats:
+        stat['percentage'] = (stat['total'] / total_appeals * 100) if total_appeals else 0
+
     context = {
         'status_stats': status_stats,
         'category_stats': category_stats,
@@ -252,18 +262,44 @@ def service_statistics(request):
 
     return render(request, 'service/service_statistics.html', context)
 
+
 @login_required
 def employee_appeals(request):
-    # Проверяем, что пользователь является сотрудником
     if not request.user.id_sotrudnik:
-        return redirect('profile')  # Перенаправляем, если пользователь не сотрудник
+        return redirect('profile')
 
-    # Получаем службу, к которой относится сотрудник
     service = request.user.id_sotrudnik.id_service
-
-    # Получаем обращения, назначенные на службу
     appeals = Appeals.objects.filter(id_service=service)
-    return render(request, 'service/appeals_service.html', {'appeals': appeals})
+
+    # Фильтрация по статусу
+    status_filter = request.GET.get('status')
+    if status_filter:
+        appeals = appeals.filter(processing_appeals__id_status=status_filter).distinct()
+
+    # Фильтрация по дате (используем date_time вместо date_appeal)
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    exact_date = request.GET.get('exact_date')
+
+    if exact_date:
+        appeals = appeals.filter(date_time__date=exact_date)
+    else:
+        if date_from:
+            appeals = appeals.filter(date_time__date__gte=date_from)
+        if date_to:
+            appeals = appeals.filter(date_time__date__lte=date_to)
+
+    # Получаем все возможные статусы для фильтра
+    statuses = Status.objects.all()
+
+    return render(request, 'service/appeals_service.html', {
+        'appeals': appeals,
+        'statuses': statuses,
+        'current_status': status_filter,
+        'date_from': date_from or '',
+        'date_to': date_to or '',
+        'exact_date': exact_date or '',
+    })
 
 
 @login_required
@@ -1331,7 +1367,7 @@ def admin_statistics(request):
     # Фильтры
     status_filter = request.GET.get('status')
     category_filter = request.GET.get('category')
-    service_filter = request.GET.get('service')  # Новый фильтр по службе
+    service_filter = request.GET.get('service')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     specific_date = request.GET.get('specific_date')
@@ -1339,51 +1375,64 @@ def admin_statistics(request):
     # Базовый запрос для обращений
     appeals = Appeals.objects.all()
 
-    # Применение фильтров к обращениям
+    # Применение фильтров
     if category_filter:
         appeals = appeals.filter(id_category__id=category_filter)
-    if service_filter:  # Фильтр по службе
+    if service_filter:
         appeals = appeals.filter(id_service__id=service_filter)
     if date_from and date_to:
         appeals = appeals.filter(date_time__range=[date_from, date_to])
     if specific_date:
         appeals = appeals.filter(date_time__date=specific_date)
 
-    # Подзапрос для получения последнего статуса каждого обращения
-    last_status_subquery = Processing_appeals.objects.filter(
+    # Создаем подзапрос для получения последних статусов
+    latest_status_subquery = Processing_appeals.objects.filter(
         id_appeal=OuterRef('id')
-    ).order_by('-date_time_setting_status').values('id_status__name_status')[:1]
+    ).order_by('-date_time_setting_status').values('id_status')[:1]
 
-    # Аннотируем обращения их последним статусом
+    # Аннотируем обращения последним статусом
     appeals_with_last_status = appeals.annotate(
-        last_status=Subquery(last_status_subquery)
+        last_status_id=Subquery(latest_status_subquery)
+    ).annotate(
+        last_status_name=Subquery(
+            Status.objects.filter(id=OuterRef('last_status_id'))
+            .values('name_status')[:1]
+        )
     )
 
     # Фильтрация по последнему статусу (если указан фильтр)
     if status_filter:
         appeals_with_last_status = appeals_with_last_status.filter(
-            last_status=status_filter)
+            last_status_id=status_filter)
 
     # Статистика по службам
     service_stats = appeals_with_last_status.values('id_service__name').annotate(
         total=Count('id')).order_by('-total')
 
-    # Статистика по последним статусам
-    status_stats = appeals_with_last_status.values('last_status').annotate(
+    # Статистика по статусам
+    status_stats = appeals_with_last_status.values('last_status_name').annotate(
         total=Count('id')).order_by('-total')
 
     # Статистика по категориям
     category_stats = appeals.values('id_category__name_official').annotate(
         total=Count('id')).order_by('-total')
 
-    # Контекст
+    # Рассчитываем проценты
+    total_appeals = appeals.count()
+    for stat in service_stats:
+        stat['percentage'] = (stat['total'] / total_appeals * 100) if total_appeals else 0
+    for stat in status_stats:
+        stat['percentage'] = (stat['total'] / total_appeals * 100) if total_appeals else 0
+    for stat in category_stats:
+        stat['percentage'] = (stat['total'] / total_appeals * 100) if total_appeals else 0
+
     context = {
         'service_stats': service_stats,
         'status_stats': status_stats,
         'category_stats': category_stats,
         'statuses': Status.objects.all(),
         'categories': Category.objects.all(),
-        'services': Service.objects.all(),  # Добавляем список всех служб
+        'services': Service.objects.all(),
     }
 
     return render(request, 'admin/admin_statistics.html', context)

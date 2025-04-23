@@ -4,127 +4,379 @@
 
 {% block content %}
 <div class="container">
-    <h2>Статистика обращений</h2>
+    <h2 class="my-4">Статистика обращений</h2>
 
     <!-- Фильтры -->
-    <form method="get" class="mb-4">
-        <div class="row">
-            <div class="col-md-3">
-                <label for="status">Статус:</label>
-                <select name="status" id="status" class="form-select">
-                    <option value="">Все статусы</option>
-                    {% for status in statuses %}
-                        <option value="{{ status.id }}" {% if status.id == request.GET.status %}selected{% endif %}>{{ status.name_status }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="category">Категория:</label>
-                <select name="category" id="category" class="form-select">
-                    <option value="">Все категории</option>
-                    {% for category in categories %}
-                        <option value="{{ category.id }}" {% if category.id == request.GET.category %}selected{% endif %}>{{ category.name_official }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="service">Служба:</label>  <!-- Новый фильтр по службе -->
-                <select name="service" id="service" class="form-select">
-                    <option value="">Все службы</option>
-                    {% for service in services %}
-                        <option value="{{ service.id }}" {% if service.id == request.GET.service %}selected{% endif %}>{{ service.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label for="date_from">Дата от:</label>
-                <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
-            </div>
-            <div class="col-md-3">
-                <label for="date_to">Дата до:</label>
-                <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
-            </div>
-            <div class="col-md-3">
-                <label for="specific_date">Конкретная дата:</label>
-                <input type="date" name="specific_date" id="specific_date" class="form-control" value="{{ request.GET.specific_date }}">
-            </div>
-            <div class="col-md-3 mt-4">
-                <div style="">
-                    <button type="submit" class="btn btn-primary">Применить фильтры</button>
-                    <a style="color: #fff;" href="{% url 'admin_statistics' %}"  class="btn btn-primary">Очистить</a>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Фильтры</h4>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Статус:</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">Все статусы</option>
+                        {% for status in statuses %}
+                            <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.GET.status %}selected{% endif %}>{{ status.name_status }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
+                <div class="col-md-4">
+                    <label for="category" class="form-label">Категория:</label>
+                    <select name="category" id="category" class="form-select">
+                        <option value="">Все категории</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if category.id|stringformat:"s" == request.GET.category %}selected{% endif %}>{{ category.name_official }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="service" class="form-label">Служба:</label>
+                    <select name="service" id="service" class="form-select">
+                        <option value="">Все службы</option>
+                        {% for service in services %}
+                            <option value="{{ service.id }}" {% if service.id|stringformat:"s" == request.GET.service %}selected{% endif %}>{{ service.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">Дата от:</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">Дата до:</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="specific_date" class="form-label">Конкретная дата:</label>
+                    <input type="date" name="specific_date" id="specific_date" class="form-control" value="{{ request.GET.specific_date }}">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Применить
+                    </button>
+                    <a href="{% url 'admin_statistics' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Сбросить
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
 
+    <!-- Графики -->
+    <div class="row mb-4">
+        <!-- График по службам -->
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Распределение по службам</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="serviceChart"></canvas>
+                </div>
             </div>
         </div>
-    </form>
 
-    <!-- Статистика по службам -->
-    <h3>Статистика по службам</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Служба</th>
-                <th>Количество обращений</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for stat in service_stats %}
-                <tr>
-                    <td>{{ stat.id_service__name }}</td>
-                    <td>{{ stat.total }}</td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="2">Нет данных</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <!-- График по статусам -->
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Распределение по статусам</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- Статистика по статусам -->
-    <h3>Статистика по статусам</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Статус</th>
-                <th>Количество обращений</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for stat in status_stats %}
-                <tr>
-                    <td>{{ stat.last_status }}</td>
-                    <td>{{ stat.total }}</td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="2">Нет данных</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Второй ряд графиков -->
+    <div class="row mb-4">
+        <!-- График по категориям -->
+        <div class="col-md-12">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">Распределение по категориям</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- Статистика по категориям -->
-    <h3>Статистика по категориям</h3>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Категория</th>
-                <th>Количество обращений</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for stat in category_stats %}
-                <tr>
-                    <td>{{ stat.id_category__name_official }}</td>
-                    <td>{{ stat.total }}</td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="2">Нет данных</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Таблицы с детализацией -->
+    <div class="row">
+        <!-- Таблица по службам -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">Детализация по службам</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Служба</th>
+                                    <th class="text-end">Количество</th>
+                                    <th class="text-end">Доля</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in service_stats %}
+                                    <tr>
+                                        <td>{{ stat.id_service__name }}</td>
+                                        <td class="text-end">{{ stat.total }}</td>
+                                        <td class="text-end">{{ stat.percentage|floatformat:1 }}%</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">Нет данных</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Таблица по статусам -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">Детализация по статусам</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Статус</th>
+                                    <th class="text-end">Количество</th>
+                                    <th class="text-end">Доля</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in status_stats %}
+                                    <tr>
+                                        <td>{{ stat.last_status }}</td>
+                                        <td class="text-end">{{ stat.total }}</td>
+                                        <td class="text-end">{{ stat.percentage|floatformat:1 }}%</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">Нет данных</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Таблица по категориям -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h4 class="mb-0">Детализация по категориям</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Категория</th>
+                                    <th class="text-end">Количество</th>
+                                    <th class="text-end">Доля</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in category_stats %}
+                                    <tr>
+                                        <td>{{ stat.id_category__name_official }}</td>
+                                        <td class="text-end">{{ stat.total }}</td>
+                                        <td class="text-end">{{ stat.percentage|floatformat:1 }}%</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center">Нет данных</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Данные для графиков
+    const serviceData = {
+        labels: [{% for stat in service_stats %}'{{ stat.id_service__name }}',{% endfor %}],
+        datasets: [{
+            data: [{% for stat in service_stats %}{{ stat.total }},{% endfor %}],
+            backgroundColor: [
+                '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                '#858796', '#5a5c69', '#3a3b45', '#2e59d9', '#17a673'
+            ],
+            hoverBackgroundColor: [
+                '#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617',
+                '#656776', '#42444e', '#252630', '#1c3db8', '#0f8f5e'
+            ],
+            hoverBorderColor: "rgba(234, 236, 244, 1)",
+        }]
+    };
+
+    const statusData = {
+        labels: [{% for stat in status_stats %}'{{ stat.last_status }}',{% endfor %}],
+        datasets: [{
+            data: [{% for stat in status_stats %}{{ stat.total }},{% endfor %}],
+            backgroundColor: [
+                '#6610f2', '#6f42c1', '#e83e8c', '#fd7e14', '#20c997',
+                '#d63384', '#0dcaf0', '#ffc107', '#198754', '#0d6efd'
+            ],
+            hoverBackgroundColor: [
+                '#520dc2', '#5a34a5', '#d11d7b', '#e66a0b', '#17a179',
+                '#b52a70', '#0ba5c1', '#e6ac00', '#147347', '#0a58ca'
+            ],
+            hoverBorderColor: "rgba(234, 236, 244, 1)",
+        }]
+    };
+
+    const categoryData = {
+        labels: [{% for stat in category_stats %}'{{ stat.id_category__name_official }}',{% endfor %}],
+        datasets: [{
+            data: [{% for stat in category_stats %}{{ stat.total }},{% endfor %}],
+            backgroundColor: [
+                '#FF6384', '#36A2EB', '#FFCE56', '#8AC24A', '#7B68EE',
+                '#FF7F50', '#20B2AA', '#DA70D6', '#00CED1', '#FFA07A'
+            ],
+            hoverBackgroundColor: [
+                '#E55374', '#2692DB', '#E5BE46', '#7AB23A', '#6B58DE',
+                '#E56F40', '#10A29A', '#CA60C6', '#00BEC1', '#EF907A'
+            ],
+            hoverBorderColor: "rgba(234, 236, 244, 1)",
+        }]
+    };
+
+    // Настройки для круговых диаграмм
+    const pieOptions = {
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: {
+                    usePointStyle: true,
+                    padding: 20
+                }
+            },
+            tooltip: {
+                backgroundColor: "rgb(255,255,255)",
+                bodyColor: "#858796",
+                borderColor: '#dddfeb',
+                borderWidth: 1,
+                xPadding: 15,
+                yPadding: 15,
+                displayColors: true,
+                caretPadding: 10,
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = Math.round((value / total) * 100);
+                        return `${label}: ${value} (${percentage}%)`;
+                    }
+                }
+            }
+        },
+        cutout: '50%'
+    };
+
+    // Настройки для линейной диаграммы категорий
+    const barOptions = {
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: "rgb(255,255,255)",
+                bodyColor: "#858796",
+                borderColor: '#dddfeb',
+                borderWidth: 1,
+                xPadding: 15,
+                yPadding: 15,
+                displayColors: false,
+                caretPadding: 10,
+                callbacks: {
+                    label: function(context) {
+                        return `${context.parsed.y} обращений`;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0
+                }
+            }
+        }
+    };
+
+    // Инициализация графиков
+    new Chart(document.getElementById('serviceChart'), {
+        type: 'doughnut',
+        data: serviceData,
+        options: pieOptions
+    });
+
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: statusData,
+        options: pieOptions
+    });
+
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+            labels: categoryData.labels,
+            datasets: [{
+                label: 'Количество обращений',
+                data: categoryData.datasets[0].data,
+                backgroundColor: categoryData.datasets[0].backgroundColor,
+                borderColor: categoryData.datasets[0].hoverBorderColor,
+                borderWidth: 1
+            }]
+        },
+        options: barOptions
+    });
+});
+</script>
+
+<style>
+.card {
+    border-radius: 0.35rem;
+    border: none;
+}
+.card-header {
+    border-radius: 0.35rem 0.35rem 0 0 !important;
+}
+.table-responsive {
+    max-height: 300px;
+    overflow-y: auto;
+}
+canvas {
+    min-height: 300px;
+}
+</style>
 {% endblock %}
